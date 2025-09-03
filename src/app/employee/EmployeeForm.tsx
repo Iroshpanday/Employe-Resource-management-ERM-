@@ -1,0 +1,316 @@
+// app/employee/EmployeeForm.tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSnackbar } from "notistack";
+ import {Branch} from "../branch/columns";
+ import {Department} from "../department/columns";
+
+
+export const employeeSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters").max(50),
+  lastName: z.string().min(2, "Last name must be at least 2 characters").max(50),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  position: z.string().min(2, "Position must be at least 2 characters").max(50),
+  cvFile: z.string().optional(),
+  branchId: z.number().min(1, "Please select a branch"),
+  departmentId: z.number().min(1, "Please select a department"),
+});
+
+type EmployeeFormValues = z.infer<typeof employeeSchema>;
+
+interface EmployeeFormProps {
+  onSuccess: () => void;
+  editData?: EmployeeFormData | null;
+  onCancel?: () => void;
+}
+
+export type EmployeeFormData = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  position: string;
+  cvFile?: string;
+  branchId: number;
+  departmentId: number;
+};
+
+export default function EmployeeForm({ onSuccess, editData, onCancel }: EmployeeFormProps) {
+  const { enqueueSnackbar } = useSnackbar();
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<EmployeeFormValues>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      position: "",
+      cvFile: "",
+      branchId: 0,
+      departmentId: 0,
+    },
+  });
+
+  const cvFile = watch("cvFile");
+
+  useEffect(() => {
+    // Fetch branches and departments for dropdowns
+    const fetchData = async () => {
+      try {
+        const [branchesRes, departmentsRes] = await Promise.all([
+          fetch("/api/branch"),
+          fetch("/api/department"),
+        ]);
+
+        if (branchesRes.ok) {
+          const branchesData = await branchesRes.json();
+          setBranches(branchesData);
+        }
+
+        if (departmentsRes.ok) {
+          const departmentsData = await departmentsRes.json();
+          setDepartments(departmentsData);
+        }
+      }catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "Failed to load form data";
+      enqueueSnackbar(message, { variant: "error" });
+    }
+    };
+
+    fetchData();
+  }, [enqueueSnackbar]);
+
+  useEffect(() => {
+    if (editData) {
+      reset({
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        email: editData.email,
+        phone: editData.phone || "",
+        position: editData.position,
+        cvFile: editData.cvFile || "",
+        branchId: editData.branchId,
+        departmentId: editData.departmentId,
+      });
+    } else {
+      reset({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        position: "",
+        cvFile: "",
+        branchId: 0,
+        departmentId: 0,
+      });
+    }
+  }, [editData, reset]);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      setValue("cvFile", data.path);
+      enqueueSnackbar("CV uploaded successfully", { variant: "success" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      enqueueSnackbar(message, { variant: "error" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const onSubmit = async (data: EmployeeFormValues) => {
+    try {
+      const res = await fetch(
+        editData ? `/api/employee/${editData.id}` : `/api/employee`,
+        {
+          method: editData ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to save employee");
+      }
+
+      enqueueSnackbar(editData ? "Employee updated" : "Employee created", { variant: "success" });
+      onSuccess();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "Something went wrong";
+      enqueueSnackbar(message, { variant: "error" });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium">First Name *</label>
+          <input 
+            id="firstName" 
+            type="text" 
+            {...register("firstName")} 
+            className="border rounded px-2 py-1 w-full" 
+          />
+          {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium">Last Name *</label>
+          <input 
+            id="lastName" 
+            type="text" 
+            {...register("lastName")} 
+            className="border rounded px-2 py-1 w-full" 
+          />
+          {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium">Email *</label>
+          <input 
+            id="email" 
+            type="email" 
+            {...register("email")} 
+            className="border rounded px-2 py-1 w-full" 
+          />
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium">Phone</label>
+          <input 
+            id="phone" 
+            type="text" 
+            {...register("phone")} 
+            className="border rounded px-2 py-1 w-full" 
+          />
+          {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="position" className="block text-sm font-medium">Position *</label>
+          <input 
+            id="position" 
+            type="text" 
+            {...register("position")} 
+            className="border rounded px-2 py-1 w-full" 
+          />
+          {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="branchId" className="block text-sm font-medium">Branch *</label>
+          <select
+  id="branchId"
+  {...register("branchId", { valueAsNumber: true })}
+  className="border rounded px-2 py-1 w-full"
+>
+  <option value={0}>Select a branch</option>
+  {branches.map(branch => (
+    <option key={branch.id} value={branch.id}>{branch.name}</option>
+  ))}
+</select>
+          {errors.branchId && <p className="text-red-500 text-sm mt-1">{errors.branchId.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="departmentId" className="block text-sm font-medium">Department *</label>
+          <select
+  id="departmentId"
+  {...register("departmentId", { valueAsNumber: true })}
+  className="border rounded px-2 py-1 w-full"
+>
+  <option value={0}>Select a department</option>
+  {departments.map(dept => (
+    <option key={dept.id} value={dept.id}>{dept.name}</option>
+  ))}
+</select>
+          {errors.departmentId && <p className="text-red-500 text-sm mt-1">{errors.departmentId.message}</p>}
+        </div>
+
+        <div className="md:col-span-2">
+          <label htmlFor="cvFile" className="block text-sm font-medium">CV Upload</label>
+          <div className="flex items-center gap-2">
+            <input 
+              id="cvFile"
+              type="file" 
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+              className="border rounded px-2 py-1 flex-1"
+              disabled={isUploading}
+            />
+            {isUploading && <span className="text-sm text-gray-500">Uploading...</span>}
+          </div>
+          {cvFile && (
+            <p className="text-sm text-green-600 mt-1">
+              CV uploaded: <a href={cvFile} target="_blank" rel="noopener noreferrer" className="underline">View</a>
+            </p>
+          )}
+          {errors.cvFile && <p className="text-red-500 text-sm mt-1">{errors.cvFile.message}</p>}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button 
+          type="submit" 
+          disabled={isSubmitting || isUploading} 
+          className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-blue-300"
+        >
+          {editData ? "Update" : "Add"} Employee
+        </button>
+        {editData && (
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="bg-gray-300 px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
