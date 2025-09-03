@@ -36,5 +36,24 @@ model BranchDepartment {
 
   // This ensures that the combination of a branch and a department is unique.
   @@unique([branchId, departmentId])
+  employees     Employee[]
+}
+
+model Employee {
+  id           Int              @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String           @unique
+  phone        String?
+  hireDate     DateTime         @default(now())
+  position     String
+  cvFile       String?          // local file path
+
+  // Relations
+  branchDeptId Int
+  branchDept   BranchDepartment @relation(fields: [branchDeptId], references: [id])
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 

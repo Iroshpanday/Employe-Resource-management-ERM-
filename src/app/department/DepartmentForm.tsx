@@ -6,7 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSnackbar } from "notistack";
 
-const departmentSchema = z.object({
+export const departmentSchema = z.object({
   name: z.string().min(2, "Department name must be at least 2 characters").max(50),
   location: z.string().min(2, "Department location must be at least 2 characters").max(50),
 });
@@ -65,7 +65,7 @@ export default function DepartmentForm({ onSuccess, editData, onCancel }: Depart
           ? error.message
           : typeof error === "string"
           ? error
-          : "Something went wrong";
+          : "Something went wrongFailed to load form data";
       enqueueSnackbar(message, { variant: "error" });
     }
   };
@@ -73,14 +73,15 @@ export default function DepartmentForm({ onSuccess, editData, onCancel }: Depart
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg shadow">
       <div>
-        <label className="block text-sm font-medium">Department Name</label>
-        <input type="text" {...register("name")} className="border rounded px-2 py-1 w-full" />
+        <label htmlFor="name" className="block text-sm font-medium">Department Name</label>
+        <input id="name" type="text" {...register("name")} className="border rounded px-2 py-1 w-full" />
         {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium">Department Location</label>
-        <input type="text" {...register("location")} className="border rounded px-2 py-1 w-full" />
+        <label htmlFor="location" className="block text-sm font-medium">Department Location</label>
+        <input type="text"
+        id="location" {...register("location")} className="border rounded px-2 py-1 w-full" />
         {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>}
       </div>
 
