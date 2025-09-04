@@ -55,6 +55,8 @@ model Employee {
 
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+
+  LeaveRequest LeaveRequest[]
 }
 
 model User {
@@ -69,4 +71,18 @@ model User {
   updatedAt  DateTime  @updatedAt
 
   @@map("users")
+}
+
+model LeaveRequest {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  comments    String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
