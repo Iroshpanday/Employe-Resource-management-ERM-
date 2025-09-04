@@ -8,35 +8,34 @@ datasource db {
 }
 
 model Department {
-  id       Int      @id @default(autoincrement())
-  name     String
-  location     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  branches BranchDepartment[]
+  id         Int                 @id @default(autoincrement())
+  name       String
+  location   String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  branches   BranchDepartment[]
 }
 
 model Branch {
-  id           Int       @id @default(autoincrement())
-  name         String
-  location     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  
+  id          Int                 @id @default(autoincrement())
+  name        String
+  location    String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   departments BranchDepartment[]
 }
+
 model BranchDepartment {
-  id            Int      @id @default(autoincrement())
-  
-  branchId      Int
-  branch        Branch   @relation(fields: [branchId], references: [id])
+  id           Int        @id @default(autoincrement())
+  branchId     Int
+  branch       Branch     @relation(fields: [branchId], references: [id])
 
-  departmentId  Int
-  department    Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
 
-  // This ensures that the combination of a branch and a department is unique.
+  employees    Employee[]
+
   @@unique([branchId, departmentId])
-  employees     Employee[]
 }
 
 model Employee {
@@ -47,13 +46,27 @@ model Employee {
   phone        String?
   hireDate     DateTime         @default(now())
   position     String
-  cvFile       String?          // local file path
+  cvFile       String?
 
-  // Relations
   branchDeptId Int
   branchDept   BranchDepartment @relation(fields: [branchDeptId], references: [id])
+
+  user         User?            // 1-1 relation with User
 
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }
 
+model User {
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  password   String
+  role       String    @default("EMPLOYEE") // Changed from enum to string
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+
+  employeeId Int?      @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("users")
+}

@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSnackbar } from "notistack";
- import {Branch} from "../branch/columns";
- import {Department} from "../department/columns";
-
+import { Branch } from "../branch/columns";
+import { Department } from "../department/columns";
+import { useAuth } from "@/context/AuthContext";
 
 export const employeeSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters").max(50),
@@ -43,6 +43,7 @@ export type EmployeeFormData = {
 
 export default function EmployeeForm({ onSuccess, editData, onCancel }: EmployeeFormProps) {
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -74,9 +75,20 @@ export default function EmployeeForm({ onSuccess, editData, onCancel }: Employee
     // Fetch branches and departments for dropdowns
     const fetchData = async () => {
       try {
+        const token = user?.token;
+        if (!token) return;
+
         const [branchesRes, departmentsRes] = await Promise.all([
-          fetch("/api/branch"),
-          fetch("/api/department"),
+          fetch("/api/branch", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch("/api/department", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
         ]);
 
         if (branchesRes.ok) {
@@ -88,19 +100,19 @@ export default function EmployeeForm({ onSuccess, editData, onCancel }: Employee
           const departmentsData = await departmentsRes.json();
           setDepartments(departmentsData);
         }
-      }catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-          ? error
-          : "Failed to load form data";
-      enqueueSnackbar(message, { variant: "error" });
-    }
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+            ? error
+            : "Failed to load form data";
+        enqueueSnackbar(message, { variant: "error" });
+      }
     };
 
     fetchData();
-  }, [enqueueSnackbar]);
+  }, [enqueueSnackbar, user?.token]);
 
   useEffect(() => {
     if (editData) {
@@ -133,11 +145,19 @@ export default function EmployeeForm({ onSuccess, editData, onCancel }: Employee
 
     setIsUploading(true);
     try {
+      const token = user?.token;
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 
       const res = await fetch("/api/upload", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -156,14 +176,22 @@ export default function EmployeeForm({ onSuccess, editData, onCancel }: Employee
 
   const onSubmit = async (data: EmployeeFormValues) => {
     try {
-      const res = await fetch(
-        editData ? `/api/employee/${editData.id}` : `/api/employee`,
-        {
-          method: editData ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
+      const token = user?.token;
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const url = editData ? `/api/employee/${editData.id}` : `/api/employee`;
+      const method = editData ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
 
       if (!res.ok) {
         const err = await res.json();
@@ -244,30 +272,30 @@ export default function EmployeeForm({ onSuccess, editData, onCancel }: Employee
         <div>
           <label htmlFor="branchId" className="block text-sm font-medium">Branch *</label>
           <select
-  id="branchId"
-  {...register("branchId", { valueAsNumber: true })}
-  className="border rounded px-2 py-1 w-full"
->
-  <option value={0}>Select a branch</option>
-  {branches.map(branch => (
-    <option key={branch.id} value={branch.id}>{branch.name}</option>
-  ))}
-</select>
+            id="branchId"
+            {...register("branchId", { valueAsNumber: true })}
+            className="border rounded px-2 py-1 w-full"
+          >
+            <option value={0}>Select a branch</option>
+            {branches.map(branch => (
+              <option key={branch.id} value={branch.id}>{branch.name}</option>
+            ))}
+          </select>
           {errors.branchId && <p className="text-red-500 text-sm mt-1">{errors.branchId.message}</p>}
         </div>
 
         <div>
           <label htmlFor="departmentId" className="block text-sm font-medium">Department *</label>
           <select
-  id="departmentId"
-  {...register("departmentId", { valueAsNumber: true })}
-  className="border rounded px-2 py-1 w-full"
->
-  <option value={0}>Select a department</option>
-  {departments.map(dept => (
-    <option key={dept.id} value={dept.id}>{dept.name}</option>
-  ))}
-</select>
+            id="departmentId"
+            {...register("departmentId", { valueAsNumber: true })}
+            className="border rounded px-2 py-1 w-full"
+          >
+            <option value={0}>Select a department</option>
+            {departments.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
           {errors.departmentId && <p className="text-red-500 text-sm mt-1">{errors.departmentId.message}</p>}
         </div>
 

@@ -1,10 +1,25 @@
-// app/api/employee/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { authMiddleware } from "@/lib/middleware/auth";
 
 type Param = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Param) {
+type PatchBody = Partial<{
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  position: string;
+  cvFile?: string;
+  branchId: number;
+  departmentId: number;
+}>;
+
+// GET - any logged-in user can view employees
+export async function GET(req: NextRequest, { params }: Param) {
+  const auth = authMiddleware(req);
+  if (auth instanceof NextResponse) return auth;
+  
   try {
     const id = Number((await params).id);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -22,19 +37,11 @@ export async function GET(_req: Request, { params }: Param) {
   }
 }
 
-//we can export create body & can use here also. 
-type PatchBody = Partial<{
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  position: string;
-  cvFile?: string;
-  branchId: number;
-  departmentId: number;
-}>;
-
-export async function PATCH(req: Request, { params }: Param) {
+// PATCH - only ADMIN allowed
+export async function PATCH(req: NextRequest, { params }: Param) {
+  const auth = authMiddleware(req, ["ADMIN"]);
+  if (auth instanceof NextResponse) return auth;
+  
   try {
     const id = Number((await params).id);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -73,7 +80,11 @@ export async function PATCH(req: Request, { params }: Param) {
   }
 }
 
-export async function DELETE(_req: Request, { params }: Param) {
+// DELETE - only ADMIN allowed
+export async function DELETE(req: NextRequest, { params }: Param) {
+  const auth = authMiddleware(req, ["ADMIN"]);
+  if (auth instanceof NextResponse) return auth;
+  
   try {
     const id = Number((await params).id);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
