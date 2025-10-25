@@ -42,9 +42,11 @@ export async function POST(req: NextRequest) {
     console.log("🔵 User with employee:", userWithEmployee);
 
     // Determine target employee ID based on role and request
+
+    
     let targetEmployeeId: number | null = null;
 
-    if (auth.role === "EMPLOYEE") {
+    if (auth.role === "EMPLOYEE" || auth.role === "HR" ) {
       // Employee can only check themselves out
       if (!userWithEmployee.employee) {
         console.log("❌ Employee record not found for user");

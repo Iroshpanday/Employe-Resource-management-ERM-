@@ -98,6 +98,9 @@ export default function EmployeePage() {
       cvFile: employee.cvFile,
       branchId: employee.branchDept.branch.id,
       departmentId: employee.branchDept.department.id,
+      gender: employee.gender,
+      address: employee.address,  
+      status: employee.status
     });
   };
 
@@ -113,27 +116,32 @@ export default function EmployeePage() {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Employees</h1>
-      
-      {/* Display the user's role */}
-      {user && (
-        <div className="mb-4 text-sm text-gray-600">
-          Logged in as: <span className="font-semibold">{user.role}</span>
-        </div>
-      )}
+   // app/employee/page.tsx - Update the container div
+<div className="p-4 w-full mx-auto">
+  <div className="p-6 bg-white rounded-lg shadow">
+    <h1 className="text-xl font-bold mb-4">Employees</h1>
+    
+    {/* Display the user's role */}
+    {user && (
+      <div className="mb-4 text-sm text-gray-600">
+        Logged in as: <span className="font-semibold">{user.role}</span>
+      </div>
+    )}
 
-      {user?.role === "ADMIN" && (
+    {user?.role === "ADMIN" && (
+      <div className="mb-6">
         <EmployeeForm
           onSuccess={handleSuccess}
           editData={editData}
           onCancel={() => setEditData(null)}
         />
-      )}
+      </div>
+    )}
 
-      {loading ? (
-        <p className="p-4">Loading employees...</p>
-      ) : (
+    {loading ? (
+      <p className="p-4">Loading employees...</p>
+    ) : (
+      <div className="overflow-x-auto border rounded-lg">
         <EmpDataTable
           columns={columns}
           data={employees}
@@ -143,7 +151,9 @@ export default function EmployeePage() {
             onViewCV,
           }}
         />
-      )}
-    </div>
+      </div>
+    )}
+  </div>
+</div>
   );
 }

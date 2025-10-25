@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     // Determine target employee ID based on role and request
     let targetEmployeeId: number | null = null;
 
-    if (auth.role === "EMPLOYEE") {
+    if (auth.role === "EMPLOYEE" || auth.role === "HR"){
       // Employee can only check themselves in
       if (!userWithEmployee.employee) {
         console.log("❌ Employee record not found for user");
@@ -158,9 +158,9 @@ export async function POST(req: NextRequest) {
       if (employeeId) {
         targetEmployeeId = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
       } else {
-        console.log("❌ HR/Admin error: Employee ID required");
+        console.log("❌ Admin error: Employee ID required");
         return NextResponse.json(
-          { error: "Employee ID is required for HR/Admin users" }, 
+          { error: "Employee ID is required for Admin users" }, 
           { status: 400 }
         );
       }

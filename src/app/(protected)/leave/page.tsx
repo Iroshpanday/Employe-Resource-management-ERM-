@@ -27,17 +27,21 @@ export default function LeavePage() {
     if (user?.role === "EMPLOYEE") {
       url = `/api/leave?employeeId=${user?.id}`;
     }
+    console.log("urls is:", url);
 
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log("response is:", res);
 
       if (!res.ok) throw new Error("Failed to fetch leave requests");
 
       const data: LeaveRequest[] = await res.json();
       setLeaveRequests(data);
+      console.log("data is:", data);
+      
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "An unexpected error occurred";

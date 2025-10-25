@@ -10,6 +10,7 @@ export async function GET(
   try {
     const auth = authMiddleware(req);
     if (auth instanceof NextResponse) return auth;
+    console.log("Yaha samma chalexa")
 
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: Number((await params).id) },
@@ -31,7 +32,13 @@ export async function GET(
 
     // Employees can only see their own leave requests
     if (auth.role === "EMPLOYEE" && leaveRequest.employeeId !== auth.id) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      // let role = auth.role;
+      // let employeeId = leaveRequest.employeeId;
+      // let id = auth.id;
+      // console.log("role:", role);
+      // console.log("employeeId:", employeeId);
+      // console.log("id :", id);
+      return NextResponse.json({ error: "Access denied " }, { status: 403 });
     }
 
     return NextResponse.json(leaveRequest, { status: 200 });
@@ -102,7 +109,8 @@ export async function DELETE(
     // Employees can only delete their own pending requests
     // HR/Admin can delete any request
     if (auth.role === "EMPLOYEE") {
-      if (leaveRequest.employeeId !== auth.id) {
+      if (leaveRequest.employeeId !== auth.employeeId) {
+        console.log("Access denied details - auth.id:", auth.id, "leaveRequest.employeeId:", leaveRequest.employeeId);
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
       if (leaveRequest.status !== "PENDING") {

@@ -43,10 +43,17 @@ model Employee {
   firstName    String
   lastName     String
   email        String           @unique
+  originalEmail String?         // Added this to store original email
   phone        String?
+  originalPhone String?         // Added this to store original phone
   hireDate     DateTime         @default(now())
   position     String
   cvFile       String?
+
+    // New fields for UI
+  gender       String?          // e.g. "Male" | "Female" | "Other"
+  address      String?
+  status       String @default("Active") // Active, Inactive, On Leave
 
   branchDeptId Int
   branchDept   BranchDepartment @relation(fields: [branchDeptId], references: [id])
@@ -56,13 +63,16 @@ model Employee {
 
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?        //  this is  for soft delete
 
-  LeaveRequest LeaveRequest[]
+  LeaveRequest LeaveRequest[]   @relation("EmployeeLeaveRequests")
+  approvedLeaveRequests LeaveRequest[] @relation("ApprovedLeaveRequests")
 }
 
 model User {
   id         Int       @id @default(autoincrement())
   email      String    @unique
+  originalEmail String?   // Add this to store original email
   password   String
   role       String    @default("EMPLOYEE") // Changed from enum to string
   employee   Employee? @relation(fields: [employeeId], references: [id])
@@ -70,6 +80,7 @@ model User {
   employeeId Int?      @unique
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@map("users")
 }
@@ -77,13 +88,23 @@ model User {
 model LeaveRequest {
   id          Int      @id @default(autoincrement())
   employeeId  Int
-  employee    Employee @relation(fields: [employeeId], references: [id])
+  employee     Employee  @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   startDate   DateTime
   endDate     DateTime
   reason      String
   status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
   comments    String?
+  //new fields
+  leaveType   String   // Medical Leave, Maternity Leave, etc.
+  numberOfDays Int     // Number of days of the leave
+  durationType String  // Full-day or Half-day
+  approvedById Int?
+  approvedBy   Employee? @relation("ApprovedLeaveRequests", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)    // Employee ID of the approver (Manager or HR)
+  approvalDate DateTime? // Date of approval
   
+
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

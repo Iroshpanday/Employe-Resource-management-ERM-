@@ -5,8 +5,10 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getFilteredRowModel,
+  getSortedRowModel, // Add this import
   flexRender,
   ColumnDef,
+  SortingState, // Add this import
 } from "@tanstack/react-table"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
@@ -23,7 +25,7 @@ import {
 export type TableMeta<TData> = {
   onEdit?: (row: TData) => void
   onDelete?: (row: TData) => void
-  onViewCV?: (row: TData) => void // Add this line
+  onViewCV?: (row: TData) => void
 }
 
 interface DataTableProps<TData, TValue> {
@@ -38,15 +40,21 @@ export function EmpDataTable<TData, TValue>({
   meta,
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState("")
+  const [sorting, setSorting] = useState<SortingState>([]) // Add sorting state
 
   const table = useReactTable({
     data,
     columns,
-    state: { globalFilter },
+    state: { 
+      globalFilter,
+      sorting, // Add sorting to state
+    },
     onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting, // Add sorting change handler
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(), // Add sorted row model
     meta,
   })
 
@@ -67,7 +75,9 @@ export function EmpDataTable<TData, TValue>({
             <TableRow key={hg.id}>
               {hg.headers.map((header) => (
                 <TableHead key={header.id}>
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>

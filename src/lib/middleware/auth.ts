@@ -2,6 +2,15 @@ import { NextResponse, NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
+export type JWTPayload = {
+  id: number;
+  role: string;
+  employeeId?: number;
+  email?: string;
+  iat?: number;
+  exp?: number;
+};
+
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 // Hash password
@@ -16,14 +25,26 @@ export const comparePassword = async (password: string, hash: string) => {
 };
 
 // Generate JWT
-export const generateToken = (payload: { id: number; role: string }) => {
+export const generateToken = (payload: JWTPayload) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 };
 
 // Verify JWT
-export const verifyToken = (token: string) => {
-  return jwt.verify(token, JWT_SECRET) as { id: number; role: string };
+// export const verifyToken = (token: string) => {
+//   return jwt.verify(token, JWT_SECRET) as { 
+//     id: number; 
+//     role: string; 
+//     employeeId?: number;
+//     email?: string;
+//     iat?: number;
+//     exp?: number;
+//   };
+// };
+
+export const verifyToken = (token: string): JWTPayload => {
+  return jwt.verify(token, JWT_SECRET) as JWTPayload;
 };
+
 
 // Auth Middleware
 export function authMiddleware(req: NextRequest, allowedRoles?: string[]) {
@@ -39,9 +60,13 @@ export function authMiddleware(req: NextRequest, allowedRoles?: string[]) {
     if (!token) {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
+    // Add debug logging here
+    console.log("Token:", token);
+    const decoded = verifyToken(token);
+    console.log("Decoded token:", decoded); // Check what's actually decoded
 
     // Verify the token using the same function
-    const decoded = verifyToken(token);
+    // const decoded = verifyToken(token);
     
     // Check if user has required role
     if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {

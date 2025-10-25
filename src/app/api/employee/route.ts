@@ -11,15 +11,25 @@ type CreateBody = {
   cvFile?: string;
   branchId: number;
   departmentId: number;
+  gender: "Male" | "Female" | "Other";
+  address: string;
+  status: "Active" | "Inactive" | "On Leave";
 };
 
 // GET - any logged-in user can view employees
 export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
+  const url = new URL(req.url);
+  const includeDeleted = url.searchParams.get('includeDeleted') === 'true';
+
   if (auth instanceof NextResponse) return auth;
 
   try {
     const employees = await prisma.employee.findMany({
+      where: { 
+        
+        ...(includeDeleted ? {} : { deletedAt: null }) // Only non-deleted by default
+      },
       orderBy: { id: "desc" },
       include: { branchDept: { include: { branch: true, department: true } } },
     });
@@ -37,9 +47,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json()) as CreateBody;
-    const { firstName, lastName, email, phone, position, cvFile, branchId, departmentId } = body;
+    const { firstName, lastName, email, phone, position, cvFile, branchId, departmentId,gender,address,status } = body;
 
-    if (!firstName || !lastName || !email || !position || !branchId || !departmentId) {
+    if (!firstName || !lastName || !email || !position || !branchId || !departmentId || !gender || !address || !status) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -60,7 +70,7 @@ export async function POST(req: NextRequest) {
     });
 
     const created = await prisma.employee.create({
-      data: { firstName, lastName, email, phone, position, cvFile, branchDeptId: branchDept.id },
+      data: { firstName, lastName, email, phone, position, cvFile, branchDeptId: branchDept.id, gender,address,status },
       include: { branchDept: { include: { branch: true, department: true } } },
     });
 
