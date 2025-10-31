@@ -19,9 +19,11 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   meta?: {
+    currentUser?: any;
     onApprove?: (item: TData) => void;
     onReject?: (item: TData) => void;
     onDelete?: (item: TData) => void;
+    onCancel?: (item: TData) => void;
   };
 }
 
@@ -34,6 +36,7 @@ export function LeaveDataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    meta,
   });
 
   return (
@@ -52,7 +55,7 @@ export function LeaveDataTable<TData, TValue>({
                       )}
                 </TableHead>
               ))}
-              {meta && <TableHead>Actions</TableHead>}
+              
             </TableRow>
           ))}
         </TableHeader>
@@ -65,36 +68,7 @@ export function LeaveDataTable<TData, TValue>({
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
-                {meta && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {meta.onApprove && (
-                        <button
-                          onClick={() => meta.onApprove?.(row.original)}
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {meta.onReject && (
-                        <button
-                          onClick={() => meta.onReject?.(row.original)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Reject
-                        </button>
-                      )}
-                      {meta.onDelete && (
-                        <button
-                          onClick={() => meta.onDelete?.(row.original)}
-                          className="text-gray-600 hover:text-gray-800"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </TableCell>
-                )}
+                
               </TableRow>
             ))
           ) : (

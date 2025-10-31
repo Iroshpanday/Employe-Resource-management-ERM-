@@ -63,6 +63,7 @@ export function authMiddleware(req: NextRequest, allowedRoles?: string[]) {
     // Add debug logging here
     console.log("Token:", token);
     const decoded = verifyToken(token);
+    
     console.log("Decoded token:", decoded); // Check what's actually decoded
 
     // Verify the token using the same function

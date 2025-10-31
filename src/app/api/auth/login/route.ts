@@ -33,6 +33,15 @@ export async function POST(req: Request) {
     if (!valid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
+     // DEBUG: Log what we found
+    console.log("User found:", {
+      userId: user.id,
+      userEmail: user.email,
+      userRole: user.role,
+      employeeId: user.employee?.id,
+      hasEmployee: !!user.employee
+    });
+
 
     // Create token with employeeId included
     const token = jwt.sign(
@@ -45,6 +54,10 @@ export async function POST(req: Request) {
       SECRET,
       { expiresIn: "1d" }
     );
+
+     // DEBUG: Verify the token contains what we expect
+    const decoded = jwt.verify(token, SECRET);
+    console.log("Token will contain:", decoded);
 
     // Return all required user data including id and employeeId
     return NextResponse.json({ 

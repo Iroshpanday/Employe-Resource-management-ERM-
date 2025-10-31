@@ -20,6 +20,7 @@ export default function BranchPage() {
       const res = await fetch("/api/branch", { cache: "no-store" });
       const data: Branch[] = await res.json();
       setBranches(data);
+      console.log(data);
     } catch {
       enqueueSnackbar("Failed to fetch branches", { variant: "error" });
     } finally {

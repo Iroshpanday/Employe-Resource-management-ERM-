@@ -9,26 +9,29 @@ export default function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
 
-    if (res.ok) {
-      // Updated to match new login function signature
-      login(data.user.email, data.token, {
-        id: data.user.id,
-        role: data.user.role
-      });
-      router.push("/employee");
-    } else {
-      alert(data.error);
-    }
-  };
+  if (res.ok) {
+    console.log("Login response data:", data); // Add this debug log
+    
+    // FIX: Make sure you're passing employeeId from data.user.employeeId
+    login(data.user.email, data.token, {
+      id: data.user.id,
+      role: data.user.role,
+      employeeId: data.user.employeeId // ← This must come from data.user.employeeId
+    });
+    router.push("/employee");
+  } else {
+    alert(data.error);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="p-4 max-w-sm mx-auto space-y-3">

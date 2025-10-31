@@ -166,20 +166,20 @@ export const columns: ColumnDef<Employee>[] = [
       <div className="truncate max-w-[150px]">{row.original.email}</div>
     ),
   },
-  {
-    accessorKey: "gender",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Gender
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-  },
+  // {
+  //   accessorKey: "gender",
+  //   header: ({ column }) => {
+  //     return (
+  //       <Button
+  //         variant="ghost"
+  //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+  //       >
+  //         Gender
+  //         <ArrowUpDown className="ml-2 h-4 w-4" />
+  //       </Button>
+  //     )
+  //   },
+  // },
   {
     accessorKey: "address",
     header: ({ column }) => {

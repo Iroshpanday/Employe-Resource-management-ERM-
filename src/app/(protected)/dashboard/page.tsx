@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
       <DashboardStats />
 
-      {(user?.role === "EMPLOYEE" || user?.role === "HR" || user?.role === "ADMIN") && (
+      {(user?.role === "EMPLOYEE" || user?.role === "HR" ) && (
         <AttendanceActions onAction={fetchRecentAttendance} />
       )}
 

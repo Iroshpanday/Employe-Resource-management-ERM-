@@ -128,6 +128,30 @@ export default function LeavePage() {
     setShowForm(false);
     fetchLeaveRequests();
   };
+  // Add this function in page.tsx, alongside handleApprove, handleReject, handleDelete:
+
+const handleCancel = async (leave: LeaveRequest) => {
+  try {
+    const token = user?.token;
+    const res = await fetch(`/api/leave/${leave.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status: "CANCELLED" }), // Or "REJECTED" if you prefer
+    });
+
+    if (!res.ok) throw new Error("Failed to cancel leave");
+    
+    enqueueSnackbar("Leave request cancelled", { variant: "success" });
+    fetchLeaveRequests();
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred";
+    enqueueSnackbar(errorMessage, { variant: "error" });
+  }
+};
 
   return (
     <div className="p-6">
@@ -156,9 +180,11 @@ export default function LeavePage() {
           columns={columns}
           data={leaveRequests}
           meta={{
-            onApprove: (user?.role === "HR" || user?.role === "ADMIN") ? handleApprove : undefined,
-            onReject: (user?.role === "HR" || user?.role === "ADMIN") ? handleReject : undefined,
+            currentUser: user, 
+            onApprove: handleApprove,
+            onReject: handleReject,
             onDelete: handleDelete,
+            onCancel: handleCancel,
           }}
         />
       )}

@@ -169,20 +169,20 @@ export const columns: ColumnDef<Employee>[] = [
       <div className="truncate max-w-[150px]">{row.original.email}</div>
     ),
   },
-  {
-    accessorKey: "gender",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Gender
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-  },
+  // {
+  //   accessorKey: "gender",
+  //   header: ({ column }) => {
+  //     return (
+  //       <Button
+  //         variant="ghost"
+  //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+  //       >
+  //         Gender
+  //         <ArrowUpDown className="ml-2 h-4 w-4" />
+  //       </Button>
+  //     )
+  //   },
+  // },
   {
     accessorKey: "address",
     header: ({ column }) => {
@@ -200,33 +200,33 @@ export const columns: ColumnDef<Employee>[] = [
       <div className="truncate max-w-[150px]">{row.original.address}</div>
     ),
   },
-  {
-    accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Employee Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => (
-      <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          row.original.status === "Active"
-            ? "bg-green-100 text-green-800"
-            : row.original.status === "On Leave"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-red-100 text-red-800"
-        }`}
-      >
-        {row.original.status}
-      </span>
-    ),
-  },
+  // {
+  //   accessorKey: "status",
+  //   header: ({ column }) => {
+  //     return (
+  //       <Button
+  //         variant="ghost"
+  //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+  //       >
+  //         Employee Status
+  //         <ArrowUpDown className="ml-2 h-4 w-4" />
+  //       </Button>
+  //     )
+  //   },
+  //   cell: ({ row }) => (
+  //     <span
+  //       className={`px-2 py-1 rounded-full text-xs ${
+  //         row.original.status === "Active"
+  //           ? "bg-green-100 text-green-800"
+  //           : row.original.status === "On Leave"
+  //           ? "bg-yellow-100 text-yellow-800"
+  //           : "bg-red-100 text-red-800"
+  //       }`}
+  //     >
+  //       {row.original.status}
+  //     </span>
+  //   ),
+  // },
   {
   accessorKey: "deleteStatus",
   header: "Status",

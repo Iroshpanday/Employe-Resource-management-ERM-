@@ -7,8 +7,11 @@ import { columns, Employee } from "./columns";
 import { useSnackbar } from "notistack";
 import { EmpDataTable } from "./Empdata-table";
 import { useAuth } from "@/context/AuthContext";
-import { Switch } from "@/components/ui/switch"; // Import switch component
-import { Label } from "@/components/ui/label"; // Import label component
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import EmployeeForm from "./EmployeeForm";
+import { Button } from "@/components/ui/button"; // 
+import { X } from "lucide-react"; 
 
 export default function EmployeePage() {
   const { user } = useAuth();
@@ -16,7 +19,8 @@ export default function EmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState<EmployeeFormData | null>(null);
-  const [showDeleted, setShowDeleted] = useState(false); // Add state for toggle
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [showForm, setShowForm] = useState(false); // New state to control form visibility
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -54,7 +58,7 @@ export default function EmployeePage() {
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar, user?.token, showDeleted]); // Add showDeleted to dependencies
+  }, [enqueueSnackbar, user?.token, showDeleted]);
 
   useEffect(() => {
     if (user?.token) {
@@ -87,6 +91,7 @@ export default function EmployeePage() {
 
       if (editData?.id === employee.id) {
         setEditData(null);
+        setShowForm(false);
       }
 
       enqueueSnackbar("Employee soft deleted successfully", { variant: "success" });
@@ -119,6 +124,7 @@ export default function EmployeePage() {
       address: employee.address,  
       status: employee.status
     });
+    setShowForm(true); // Show form when editing
   };
 
   const onViewCV = (employee: Employee) => {
@@ -127,19 +133,66 @@ export default function EmployeePage() {
     }
   };
 
+  const handleSuccess = () => {
+    console.log("🟢 handleSuccess called in page.tsx");
+  console.log("🟢 enqueueSnackbar function exists:", !!enqueueSnackbar);
+  console.log("🟢 editData:", editData);
+  
+  try {
+    enqueueSnackbar(
+      editData ? "Employee updated successfully!" : "Employee added successfully!",
+      { 
+        variant: "success",
+        autoHideDuration: 3000
+      }
+    );
+    console.log("🟢 enqueueSnackbar was called");
+  } catch (error) {
+    console.error("🔴 Error calling enqueueSnackbar:", error);
+  }
+    fetchEmployees();
+    setEditData(null);
+    setShowForm(false); // Hide form after successful submission
+    
+  };
+
+  const handleCancel = () => {
+    setEditData(null);
+    setShowForm(false); // Hide form when cancel is clicked
+  };
+
+  const handleAddEmployee = () => {
+    setEditData(null); // Clear any edit data
+    setShowForm(true); // Show form for adding new employee
+  };
+
+  const handleCloseForm = () => {
+    setEditData(null);
+    setShowForm(false);
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Employees</h1>
         
         {/* Show Deleted Toggle */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="show-deleted"
-            checked={showDeleted}
-            onCheckedChange={setShowDeleted}
-          />
-          <Label htmlFor="show-deleted">Show Deleted</Label>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-deleted"
+              checked={showDeleted}
+              onCheckedChange={setShowDeleted}
+            />
+            <Label htmlFor="show-deleted">Show Deleted</Label>
+          </div>
+          
+          {/* Add Employee Button - Only show when form is hidden and user has permission */}
+          {(user?.role === "ADMIN" || user?.role === "HR") && !showForm && (
+            <Button onClick={handleAddEmployee} className="bg-blue-500 hover:bg-blue-600">
+              Add Employee
+            </Button>
+          )}
         </div>
       </div>
       
@@ -147,6 +200,35 @@ export default function EmployeePage() {
       {user && (
         <div className="mb-4 text-sm text-gray-600">
           Logged in as: <span className="font-semibold">{user.role}</span>
+        </div>
+      )}
+      
+      {/* Employee Form - Conditionally rendered */}
+       {(user?.role === "ADMIN" || user?.role === "HR") && showForm && (
+        <div className="mb-6 border rounded-lg shadow">
+          {/* Form Header with Close Button */}
+          <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
+            <h2 className="text-lg font-semibold">
+              {editData ? "Edit Employee" : "Add New Employee"}
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCloseForm}
+              className="h-8 w-8 p-0 hover:bg-gray-200"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Form Content */}
+          <div className="p-4">
+            <EmployeeForm
+              onSuccess={handleSuccess}
+              editData={editData}
+              onCancel={handleCancel}
+            />
+          </div>
         </div>
       )}
 
@@ -157,7 +239,7 @@ export default function EmployeePage() {
           columns={columns}
           data={employees}
           meta={{
-            onEdit: user?.role === "ADMIN" ? onEdit : undefined,
+            onEdit: (user?.role === "ADMIN" || user?.role === "HR") ? onEdit : undefined,
             onDelete: user?.role === "ADMIN" ? onDelete : undefined,
             onViewCV,
           }}

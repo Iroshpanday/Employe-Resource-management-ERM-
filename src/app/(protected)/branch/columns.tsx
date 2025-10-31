@@ -45,7 +45,7 @@ export const columns: ColumnDef<Branch>[] = [
     header: "Branch Name",
   },
   {
-    accessorKey: "Branch location",
+    accessorKey: "location",
     header: "Location",
   },
   {

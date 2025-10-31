@@ -70,7 +70,7 @@ export default function AttendancePage() {
         <h1 className="text-2xl font-bold">Attendance Records</h1>
       </div>
 
-      {(user?.role === "EMPLOYEE" || user?.role === "HR" || user?.role === "ADMIN") && (
+      {(user?.role === "EMPLOYEE" || user?.role === "HR" ) && (
         <AttendanceActions onAction={fetchAttendance} />
       )}
 

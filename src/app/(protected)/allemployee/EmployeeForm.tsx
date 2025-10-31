@@ -222,9 +222,8 @@ export default function EmployeeForm({
         throw new Error(err.error ?? "Failed to save employee");
       }
 
-      enqueueSnackbar(editData ? "Employee updated" : "Employee created", {
-        variant: "success",
-      });
+      
+      console.log("✅ onSuccess() called from EmployeeForm");
       onSuccess();
       reset();
     } catch (error: unknown) {
@@ -243,6 +242,7 @@ export default function EmployeeForm({
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-4 p-4 border rounded-lg shadow"
     >
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="firstName" className="block text-sm font-medium">

@@ -10,7 +10,7 @@ export async function GET(
   try {
     const auth = authMiddleware(req);
     if (auth instanceof NextResponse) return auth;
-    console.log("Yaha samma chalexa")
+    // console.log("Yaha samma chalexa")
 
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: Number((await params).id) },
@@ -30,16 +30,16 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Employees can only see their own leave requests
-    if (auth.role === "EMPLOYEE" && leaveRequest.employeeId !== auth.id) {
-      // let role = auth.role;
-      // let employeeId = leaveRequest.employeeId;
-      // let id = auth.id;
-      // console.log("role:", role);
-      // console.log("employeeId:", employeeId);
-      // console.log("id :", id);
-      return NextResponse.json({ error: "Access denied " }, { status: 403 });
-    }
+    // // Employees can only see their own leave requests
+    // if (auth.role === "EMPLOYEE" && leaveRequest.employeeId !== auth.id) {
+    //   // let role = auth.role;
+    //   // let employeeId = leaveRequest.employeeId;
+    //   // let id = auth.id;
+    //   // console.log("role:", role);
+    //   // console.log("employeeId:", employeeId);
+    //   // console.log("id :", id);
+    //   return NextResponse.json({ error: "Access denied " }, { status: 403 });
+    // }
 
     return NextResponse.json(leaveRequest, { status: 200 });
   } catch (error: unknown) {
@@ -55,13 +55,13 @@ export async function PATCH(
 ) {
   try {
     // Only HR and Admin can update leave requests
-    const auth = authMiddleware(req, ["HR", "ADMIN"]);
+    const auth = authMiddleware(req, ["HR", "ADMIN", "EMPLOYEE"]);
     if (auth instanceof NextResponse) return auth;
 
     const body = await req.json();
     const { status, comments } = body;
 
-    if (!status || !["APPROVED", "REJECTED", "PENDING"].includes(status)) {
+    if (!status || !["APPROVED", "REJECTED", "PENDING", "CANCELLED"].includes(status)) {
       return NextResponse.json({ error: "Valid status is required" }, { status: 400 });
     }
 

@@ -4,6 +4,7 @@ import Sidebar from "@/components/shared/Sidebar";
 import { Bell, Search, Settings } from "lucide-react";
 import Image from "next/image";
 
+
 interface LayoutProps {
   children: React.ReactNode;
 }

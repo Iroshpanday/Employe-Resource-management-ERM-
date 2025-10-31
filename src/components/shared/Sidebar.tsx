@@ -15,7 +15,8 @@ import {
   Building2,
   GraduationCap,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Store
 } from "lucide-react";
 import clsx from "clsx";
 import { useState } from "react";
@@ -92,6 +93,12 @@ const menuCategories = [
         name: "Jobs", 
         href: "/jobs", 
         icon: Jobs,
+        hasSubmenu: false
+      },
+      { 
+        name: "Branch", 
+        href: "/branch", 
+        icon: Store,
         hasSubmenu: false
       },
       { 

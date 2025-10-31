@@ -5,12 +5,13 @@ type User = {
   id: number;
   email: string;
   role: string;
+  employeeId?: number;
   token: string;
 } | null;
 
 type AuthContextType = {
   user: User;
-  login: (email: string, token: string, userData: { id: number; role: string }) => void;
+  login: (email: string, token: string, userData: { id: number; role: string; employeeId?: number }) => void;
   logout: () => void;
 };
 
@@ -27,11 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (email: string, token: string, userData: { id: number; role: string }) => {
+  const login = (email: string, token: string, userData: { id: number; role: string; employeeId?: number }) => {
     const userObj = { 
       id: userData.id, 
       email, 
-      role: userData.role, 
+      role: userData.role,
+      employeeId: userData.employeeId, 
+
       token 
     };
     localStorage.setItem("auth", JSON.stringify(userObj));

@@ -1,12 +1,13 @@
 // src/app/layout.tsx
+"use client"; // Add this directive
+
 import "./globals.css";
 import type { Metadata } from "next";
 import { AuthProvider } from "@/context/AuthContext";
+import { SnackbarProvider } from 'notistack';
 
-export const metadata: Metadata = {
-  title: "EMS System",
-  description: "Employee Management System",
-};
+// Since we're using "use client", we can't use export const metadata
+// We'll use a different approach for metadata
 
 export default function RootLayout({
   children,
@@ -15,8 +16,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <title>EMS System</title>
+        <meta name="description" content="Employee Management System" />
+      </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <SnackbarProvider 
+          maxSnack={3}
+          autoHideDuration={3000}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          <AuthProvider>{children}</AuthProvider>
+        </SnackbarProvider>
       </body>
     </html>
   );
