@@ -65,8 +65,13 @@ model Employee {
   updatedAt    DateTime         @updatedAt
   deletedAt    DateTime?        //  this is  for soft delete
 
+  task Task[]
+  comment Comment[]
+
   LeaveRequest LeaveRequest[]   @relation("EmployeeLeaveRequests")
   approvedLeaveRequests LeaveRequest[] @relation("ApprovedLeaveRequests")
+  
+  projects ProjectEmployee[]
 }
 
 model User {
@@ -122,4 +127,73 @@ model Attendance {
   updatedAt   DateTime @updatedAt
 
   @@unique([employeeId, date])
+}
+
+// Add to your existing schema.prisma
+model Project {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  clientName  String
+  startDate   DateTime
+  endDate     DateTime?
+  deadline    DateTime
+  priority    String    // HIGH, MEDIUM, LOW
+  status      String    @default("ACTIVE") // ACTIVE, DEACTIVE, COMPLETED
+  progress    Int       @default(0) // Progress percentage 0-100
+  image       String?   // For image upload
+  category    String?
+  
+  // Many-to-many relation with employees
+  projectEmployees ProjectEmployee[]
+  
+  // Tasks for the project
+  tasks       Task[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProjectEmployee {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  role       String   @default("MEMBER") // MEMBER, LEAD
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([projectId, employeeId])
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  priority    String   // HIGH, MEDIUM, LOW
+  dueDate     DateTime?
+  
+  projectId   Int
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  assignedTo  Int?
+  assignedEmployee Employee? @relation(fields: [assignedTo], references: [id])
+  
+  comments    Comment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employeeId Int
+  employee  Employee @relation(fields: [employeeId], references: [id])
+  
+  createdAt DateTime @default(now())
 }

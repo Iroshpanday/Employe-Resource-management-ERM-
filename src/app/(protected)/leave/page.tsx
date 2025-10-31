@@ -180,7 +180,7 @@ const handleCancel = async (leave: LeaveRequest) => {
           columns={columns}
           data={leaveRequests}
           meta={{
-            currentUser: user, 
+            currentUser: user || undefined, 
             onApprove: handleApprove,
             onReject: handleReject,
             onDelete: handleDelete,

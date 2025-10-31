@@ -31,8 +31,8 @@ export default function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // const [startDate, setStartDate] = useState("");
+  // const [endDate, setEndDate] = useState("");
 
   const {
     register,

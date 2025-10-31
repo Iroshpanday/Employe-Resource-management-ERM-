@@ -16,6 +16,17 @@ export type LeaveRequest = {
   };
 };
 
+type TableMeta = {
+  currentUser: {
+    employeeId: number;
+    role: "ADMIN" | "HR" | "EMPLOYEE";
+  };
+  onApprove?: (leave: LeaveRequest) => void;
+  onReject?: (leave: LeaveRequest) => void;
+  onDelete?: (leave: LeaveRequest) => void;
+  onCancel?: (leave: LeaveRequest) => void;
+};
+
 export const columns: ColumnDef<LeaveRequest>[] = [
   {
     accessorKey: "employee",
@@ -69,7 +80,7 @@ export const columns: ColumnDef<LeaveRequest>[] = [
     header: "Actions",
     cell: ({ row, table }) => {
       const leaveRequest = row.original;
-      const meta = table.options.meta as any;
+      const meta = table.options.meta as TableMeta;
       const currentUser = meta?.currentUser;
 
       // Permission checks

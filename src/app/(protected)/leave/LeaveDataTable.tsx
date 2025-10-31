@@ -19,7 +19,9 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   meta?: {
-    currentUser?: any;
+    currentUser?:{
+    role: string;
+  }
     onApprove?: (item: TData) => void;
     onReject?: (item: TData) => void;
     onDelete?: (item: TData) => void;
