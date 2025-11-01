@@ -27,7 +27,7 @@ export default function LoginForm() {
       role: data.user.role,
       employeeId: data.user.employeeId // ← This must come from data.user.employeeId
     });
-    router.push("/employee");
+    router.push("/");
   } else {
     alert(data.error);
   }

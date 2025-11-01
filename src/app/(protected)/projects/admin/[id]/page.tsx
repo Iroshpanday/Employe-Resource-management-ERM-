@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSnackbar } from "notistack";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import { Project } from "../../columns";
 import AddTeamMemberModal from "../components/AddTeamMemberModal";
 import CreateTaskModal from "../components/CreateTaskModal";
 import { ConfirmDialog } from "./ConfirmDialog";
+import Image from "next/image";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -24,13 +25,7 @@ export default function ProjectDetailsPage() {
 
   const projectId = params.id as string;
 
-  useEffect(() => {
-    if (user?.token && projectId) {
-      fetchProjectDetails();
-    }
-  }, [user, projectId]);
-
-  const fetchProjectDetails = async () => {
+  const fetchProjectDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : user?.token;
       const res = await fetch(`/api/projects/${projectId}`, {
@@ -56,7 +51,13 @@ export default function ProjectDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [enqueueSnackbar, router, user?.token, projectId]);
+
+  useEffect(() => {
+    if (user?.token && projectId) {
+      fetchProjectDetails();
+    }
+  }, [fetchProjectDetails, projectId, user?.token]);
 
   // Handle Edit Project
   const handleEditProject = () => {
@@ -177,7 +178,7 @@ export default function ProjectDetailsPage() {
           {/* Project Image */}
           {project.image && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <img 
+              <Image 
                 src={project.image} 
                 alt={project.title}
                 className="w-full h-64 object-cover"

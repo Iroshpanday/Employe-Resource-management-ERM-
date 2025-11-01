@@ -54,11 +54,8 @@ declare module "@tanstack/react-table" {
   }
 }
 
-/**
- * Table column definitions for Employee
- */
 
-// Replace your columns array with this updated version
+
 import { ArrowUpDown } from "lucide-react";
 
 export const columns: ColumnDef<Employee>[] = [

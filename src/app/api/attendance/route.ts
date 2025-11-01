@@ -12,6 +12,39 @@ type AttendanceWhere = {
       employeeId?: number;
     };
 
+// Utility function to get Nepal time
+function getNepalTime(): Date {
+  const now = new Date();
+  // Nepal is UTC+5:45
+  const nepalOffset = 5 * 60 + 45; // 5 hours 45 minutes in minutes
+  const localOffset = now.getTimezoneOffset(); // in minutes
+  const totalOffset = nepalOffset + localOffset; // total minutes to adjust
+  
+  return new Date(now.getTime() + totalOffset * 60 * 1000);
+}
+
+// Utility function to get today's date in Nepal time (YYYY-MM-DD format)
+// function getTodayNepalDate(): string {
+//   const nepalTime = getNepalTime();
+//   return nepalTime.toISOString().split('T')[0];
+// }
+
+// Utility function to format date for start of day in Nepal time
+function getStartOfDayNepal(date: Date = new Date()): Date {
+  const nepalTime = new Date(date.getTime() + (5 * 60 + 45 + date.getTimezoneOffset()) * 60 * 1000);
+  const startOfDay = new Date(nepalTime);
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay;
+}
+
+// Utility function to format date for end of day in Nepal time
+// function getEndOfDayNepal(date: Date = new Date()): Date {
+//   const nepalTime = getNepalTime();
+//   const endOfDay = new Date(nepalTime);
+//   endOfDay.setHours(23, 59, 59, 999);
+//   return endOfDay;
+// }
+
 // 📌 GET attendance records with filters
 export async function GET(req: NextRequest) {
   try {
@@ -190,34 +223,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use Nepal time for today's date and check-in time
+    const todayNepal = getStartOfDayNepal();
+    const checkInTimeNepal = getNepalTime();
 
-    // Check if already checked in today
+    console.log("🔵 Nepal Date:", todayNepal);
+    console.log("🔵 Nepal Check-in Time:", checkInTimeNepal);
+
+    // Check if already checked in today (Nepal time)
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
         employeeId_date: {
           employeeId: targetEmployeeId,
-          date: today
+          date: todayNepal
         }
       }
     });
 
     if (existingAttendance) {
-      console.log("❌ Already checked in today");
+      console.log("❌ Already checked in today (Nepal time)");
       return NextResponse.json(
         { error: "Already checked in today" }, 
         { status: 400 }
       );
     }
 
-    const checkInTime = new Date();
-
     const attendance = await prisma.attendance.create({
       data: {
         employeeId: targetEmployeeId,
-        date: today,
-        checkIn: checkInTime,
+        date: todayNepal,
+        checkIn: checkInTimeNepal,
         checkOut: null,
         hoursWorked: null
       },
@@ -231,7 +266,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log("✅ Check-in successful:", attendance.id);
+    console.log("✅ Check-in successful with Nepal time:", attendance.id);
     return NextResponse.json(attendance, { status: 201 });
   } catch (error) {
     console.error("❌ Check-in error:", error);

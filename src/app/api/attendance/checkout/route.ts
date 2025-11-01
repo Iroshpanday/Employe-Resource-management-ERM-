@@ -2,6 +2,31 @@ import { NextResponse,NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { authMiddleware } from "@/lib/middleware/auth";
 
+// Utility function to get Nepal time
+function getNepalTime(): Date {
+  const now = new Date();
+  // Nepal is UTC+5:45
+  const nepalOffset = 5 * 60 + 45; // 5 hours 45 minutes in minutes
+  const localOffset = now.getTimezoneOffset(); // in minutes
+  const totalOffset = nepalOffset + localOffset; // total minutes to adjust
+  
+  return new Date(now.getTime() + totalOffset * 60 * 1000);
+}
+
+// Utility function to get today's date in Nepal time (YYYY-MM-DD format)
+// function getTodayNepalDate(): string {
+//   const nepalTime = getNepalTime();
+//   return nepalTime.toISOString().split('T')[0];
+// }
+
+// Utility function to format date for start of day in Nepal time
+function getStartOfDayNepal(date: Date = new Date()): Date {
+  const nepalTime = new Date(date.getTime() + (5 * 60 + 45 + date.getTimezoneOffset()) * 60 * 1000);
+  const startOfDay = new Date(nepalTime);
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay;
+}
+
 export async function POST(req: NextRequest) {
   try {
     console.log("🔵 CHECK-OUT REQUEST RECEIVED");
@@ -42,8 +67,6 @@ export async function POST(req: NextRequest) {
     console.log("🔵 User with employee:", userWithEmployee);
 
     // Determine target employee ID based on role and request
-
-    
     let targetEmployeeId: number | null = null;
 
     if (auth.role === "EMPLOYEE" || auth.role === "HR" ) {
@@ -93,21 +116,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use Nepal time for today's date
+    const todayNepal = getStartOfDayNepal();
 
-    // Find today's attendance record
+    // Find today's attendance record (using Nepal date)
     const attendance = await prisma.attendance.findUnique({
       where: {
         employeeId_date: {
           employeeId: targetEmployeeId,
-          date: today
+          date: todayNepal
         }
       }
     });
 
     if (!attendance) {
-      console.log("❌ No check-in found for today");
+      console.log("❌ No check-in found for today (Nepal time)");
       return NextResponse.json(
         { error: "No check-in found for today" }, 
         { status: 400 }
@@ -122,17 +145,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const checkOutTime = new Date();
+    // Use Nepal time for check-out
+    const checkOutTimeNepal = getNepalTime();
     const checkInTime = new Date(attendance.checkIn);
     
-    // Calculate hours worked
-    const hoursWorked = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+    // Calculate hours worked (using Nepal times)
+    const hoursWorked = (checkOutTimeNepal.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
     const roundedHours = Math.round(hoursWorked * 100) / 100;
 
     const updatedAttendance = await prisma.attendance.update({
       where: { id: attendance.id },
       data: {
-        checkOut: checkOutTime,
+        checkOut: checkOutTimeNepal,
         hoursWorked: roundedHours
       },
       include: {
@@ -145,7 +169,11 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log("✅ Check-out successful:", updatedAttendance.id);
+    console.log("✅ Check-out successful with Nepal time:", updatedAttendance.id);
+    console.log("🔵 Check-in (Nepal):", checkInTime);
+    console.log("🔵 Check-out (Nepal):", checkOutTimeNepal);
+    console.log("🔵 Hours worked:", roundedHours);
+    
     return NextResponse.json(updatedAttendance, { status: 200 });
   } catch (error) {
     console.error("❌ Check-out error:", error);
