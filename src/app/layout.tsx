@@ -3,6 +3,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { SnackbarProvider } from 'notistack';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function RootLayout({
   children,
@@ -24,7 +25,9 @@ export default function RootLayout({
             horizontal: 'right',
           }}
         >
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>{children}
+            <SpeedInsights />
+          </AuthProvider>
         </SnackbarProvider>
       </body>
     </html>
