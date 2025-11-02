@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
-import { Employee } from "@/app/(protected)/employee/columns";
+
 
 interface TeamMember {
   employee: {

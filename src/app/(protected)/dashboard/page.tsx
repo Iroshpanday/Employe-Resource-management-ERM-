@@ -19,7 +19,7 @@ import {
   Cake,
   Bell,
   ArrowRight,
-  TrendingDown,
+  
   ListTodo,
   Timer,
   FileText
