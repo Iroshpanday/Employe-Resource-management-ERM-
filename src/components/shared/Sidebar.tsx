@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { 
   Home, 
@@ -124,6 +125,7 @@ interface SidebarProps {
 export default function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+   const { user } = useAuth();
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems(prev => 
@@ -168,11 +170,13 @@ export default function Sidebar({ className }: SidebarProps) {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Sarah Smith</p>
-            <p className="text-xs text-gray-500 truncate">Admin</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{user?.email?.split('@')[0] || 'User'}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.role?.toLowerCase() || 'User'}</p>
           </div>
         </div>
       </div>
+
+      
 
       {/* Navigation Menu */}
       <nav className="p-4 space-y-6">
