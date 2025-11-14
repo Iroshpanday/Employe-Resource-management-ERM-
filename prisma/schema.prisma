@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -43,30 +43,29 @@ model Employee {
   firstName    String
   lastName     String
   email        String           @unique
-  originalEmail String?         // Added this to store original email
+  originalEmail String?         
   phone        String?
-  originalPhone String?         // Added this to store original phone
+  originalPhone String?         
   hireDate     DateTime         @default(now())
   position     String
   cvFile       String?
 
-    // New fields for UI
-  gender       String?          // e.g. "Male" | "Female" | "Other"
+  gender       String?          
   address      String?
-  status       String @default("Active") // Active, Inactive, On Leave
+  status       String @default("Active") 
 
   branchDeptId Int
   branchDept   BranchDepartment @relation(fields: [branchDeptId], references: [id])
 
-  user         User?            // 1-1 relation with User
-  attendance  Attendance[]
+  user         User?            
+  attendance   Attendance[]
 
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-  deletedAt    DateTime?        //  this is  for soft delete
+  deletedAt    DateTime?        
 
-  task Task[]
-  comment Comment[]
+  task         Task[]
+  comment      Comment[]
 
   LeaveRequest LeaveRequest[]   @relation("EmployeeLeaveRequests")
   approvedLeaveRequests LeaveRequest[] @relation("ApprovedLeaveRequests")
@@ -75,43 +74,41 @@ model Employee {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  email      String    @unique
-  originalEmail String?   // Add this to store original email
-  password   String
-  role       String    @default("EMPLOYEE") // Changed from enum to string
-  employee   Employee? @relation(fields: [employeeId], references: [id])
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  originalEmail String?   
+  password    String
+  role        String    @default("EMPLOYEE") 
+  employee    Employee? @relation(fields: [employeeId], references: [id])
 
-  employeeId Int?      @unique
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
+  employeeId  Int?      @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   @@map("users")
 }
 
 model LeaveRequest {
-  id          Int      @id @default(autoincrement())
-  employeeId  Int
+  id           Int      @id @default(autoincrement())
+  employeeId   Int
   employee     Employee  @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  startDate   DateTime
-  endDate     DateTime
-  reason      String
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  comments    String?
-  //new fields
-  leaveType   String   // Medical Leave, Maternity Leave, etc.
-  numberOfDays Int     // Number of days of the leave
-  durationType String  // Full-day or Half-day
-  approvedById Int?
-  approvedBy   Employee? @relation("ApprovedLeaveRequests", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)    // Employee ID of the approver (Manager or HR)
-  approvalDate DateTime? // Date of approval
+  startDate    DateTime
+  endDate      DateTime
+  reason       String
+  status       String   @default("PENDING") 
+  comments     String?
   
+  leaveType    String   
+  numberOfDays Int     
+  durationType String  
+  approvedById Int?
+  approvedBy   Employee? @relation("ApprovedLeaveRequests", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approvalDate DateTime? 
 
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Attendance {
@@ -129,7 +126,6 @@ model Attendance {
   @@unique([employeeId, date])
 }
 
-// Add to your existing schema.prisma
 model Project {
   id          Int       @id @default(autoincrement())
   title       String
@@ -138,16 +134,13 @@ model Project {
   startDate   DateTime
   endDate     DateTime?
   deadline    DateTime
-  priority    String    // HIGH, MEDIUM, LOW
-  status      String    @default("ACTIVE") // ACTIVE, DEACTIVE, COMPLETED
-  progress    Int       @default(0) // Progress percentage 0-100
-  image       String?   // For image upload
+  priority    String    
+  status      String    @default("ACTIVE") 
+  progress    Int       @default(0) 
+  image       String?   
   category    String?
   
-  // Many-to-many relation with employees
   projectEmployees ProjectEmployee[]
-  
-  // Tasks for the project
   tasks       Task[]
   
   createdAt   DateTime  @default(now())
@@ -160,7 +153,7 @@ model ProjectEmployee {
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   employeeId Int
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  role       String   @default("MEMBER") // MEMBER, LEAD
+  role       String   @default("MEMBER") 
   
   createdAt  DateTime @default(now())
   
@@ -171,8 +164,8 @@ model Task {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
-  priority    String   // HIGH, MEDIUM, LOW
+  status      String   @default("PENDING") 
+  priority    String   
   dueDate     DateTime?
   
   projectId   Int
@@ -188,12 +181,12 @@ model Task {
 }
 
 model Comment {
-  id        Int      @id @default(autoincrement())
-  content   String
-  taskId    Int
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id         Int      @id @default(autoincrement())
+  content    String
+  taskId     Int
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   employeeId Int
-  employee  Employee @relation(fields: [employeeId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id])
   
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 }
