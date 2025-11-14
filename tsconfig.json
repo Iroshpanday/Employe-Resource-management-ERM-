@@ -27,6 +27,7 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
+    "prisma/**/ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     "jest.setup.js"           // ✅ Include jest setup file explicitly
