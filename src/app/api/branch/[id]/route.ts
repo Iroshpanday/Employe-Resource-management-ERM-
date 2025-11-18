@@ -1,12 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextResponse,NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET one department by ID
 export async function GET(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     const branches = await prisma.branch.findUnique({
       where: { id: Number((await params).id) },
     });
@@ -24,10 +35,20 @@ export async function GET(
 
 // 📌 UPDATE department
 export async function PATCH(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     const body = await req.json();
     const { name, location } = body;
 

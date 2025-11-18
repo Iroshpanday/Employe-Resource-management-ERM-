@@ -28,12 +28,14 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user, login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   const router = useRouter();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
+      console.log("✅ User already logged in, redirecting to /");
       router.push("/");
     }
   }, [user, router]);
@@ -50,35 +52,44 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
+    // Prevent multiple submissions
+    if (isLoading || isSubmitting) {
+      console.log("⏳ Submission already in progress, skipping");
+      return;
+    }
+    
+    setIsLoading(true);
+    setIsSubmitting(true);
+
     try {
+      console.log("🚀 Starting login process...");
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       
+      console.log("📨 Login response status:", res.status);
       const data = await res.json();
 
       if (res.ok) {
-        console.log("Login response data:", data);
+        console.log("✅ Login successful, data:", data);
+        console.log("🔄 Performing hard redirect to /");
         
-        login(data.user.email, data.token, {
-          id: data.user.id,
-          role: data.user.role,
-          employeeId: data.user.employeeId
-        });
-        
-        router.push("/");
+        // Use hard redirect to ensure cookies are properly set and middleware runs
+        window.location.href = "/";
       } else {
+        console.log("❌ Login failed:", data.error);
         alert(data.error || "Login failed");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("💥 Login error:", error);
       alert("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
+      // Don't reset isSubmitting immediately to prevent rapid re-submissions
+      setTimeout(() => setIsSubmitting(false), 1000);
     }
   };
 
@@ -149,6 +160,7 @@ export default function LoginForm() {
                 className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-900"
                 required
                 disabled={isLoading}
+                autoComplete="email"
               />
             </div>
 
@@ -163,11 +175,13 @@ export default function LoginForm() {
                   className="border border-gray-300 p-3 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-900"
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,6 +205,7 @@ export default function LoginForm() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  disabled={isLoading}
                 />
                 <span className="ml-2 text-sm text-gray-700">Remember me</span>
               </label>
@@ -203,7 +218,7 @@ export default function LoginForm() {
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-amber-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-amber-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
+              disabled={isLoading || isSubmitting}
             >
               {isLoading ? "Logging in..." : "Login"}
             </button>

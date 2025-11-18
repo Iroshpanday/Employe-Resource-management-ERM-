@@ -3,11 +3,23 @@ import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 export const runtime = "nodejs"; // ensure Node runtime
 
 export async function POST(req: Request) {
   try {
+    // 🔹 Get authenticated user
+        const user = await getAuthUser(req);
+        if (!user) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+    
+        // 🔹 Role-based access control
+        if (!["ADMIN", "HR"].includes(user.role)) {
+          return NextResponse.json({ error: "Access denied" }, { status: 403 });
+        }
+    
     const form = await req.formData();
     const file = form.get("file");
 

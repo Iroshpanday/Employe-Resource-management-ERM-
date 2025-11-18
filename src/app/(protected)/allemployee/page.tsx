@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import EmployeeForm from "./EmployeeForm";
-import { Button } from "@/components/ui/button"; // 
+import { Button } from "@/components/ui/button"; 
 import { X } from "lucide-react"; 
 
 export default function EmployeePage() {
@@ -20,17 +20,11 @@ export default function EmployeePage() {
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState<EmployeeFormData | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [showForm, setShowForm] = useState(false); // New state to control form visibility
+  const [showForm, setShowForm] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
     try {
-      const token = user?.token;
-      
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
       // Use the includeDeleted query parameter based on toggle state
       const url = showDeleted 
         ? "/api/employee?includeDeleted=true" 
@@ -38,13 +32,15 @@ export default function EmployeePage() {
 
       const res = await fetch(url, {
         cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        // No Authorization header needed - cookies are sent automatically
       });
       
       if (res.status === 401) {
         throw new Error("Unauthorized - Please login again");
+      }
+      
+      if (res.status === 403) {
+        throw new Error("You don't have permission to view employees");
       }
       
       if (!res.ok) throw new Error("Failed to fetch employees");
@@ -58,30 +54,27 @@ export default function EmployeePage() {
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar, user?.token, showDeleted]);
+  }, [enqueueSnackbar, showDeleted]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) { // Check if user exists (auth context handles loading)
       fetchEmployees();
     }
-  }, [fetchEmployees, user?.token]);
+  }, [fetchEmployees, user]);
 
   const onDelete = async (employee: Employee) => {
     try {
-      const token = user?.token;
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
       const res = await fetch(`/api/employee/${employee.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        // No Authorization header needed - cookies are sent automatically
       });
       
       if (res.status === 401) {
         throw new Error("Unauthorized - Please login again");
+      }
+      
+      if (res.status === 403) {
+        throw new Error("You don't have permission to delete employees");
       }
       
       if (!res.ok) {
@@ -124,7 +117,7 @@ export default function EmployeePage() {
       address: employee.address,  
       status: employee.status
     });
-    setShowForm(true); // Show form when editing
+    setShowForm(true);
   };
 
   const onViewCV = (employee: Employee) => {
@@ -135,35 +128,35 @@ export default function EmployeePage() {
 
   const handleSuccess = () => {
     console.log("🟢 handleSuccess called in page.tsx");
-  console.log("🟢 enqueueSnackbar function exists:", !!enqueueSnackbar);
-  console.log("🟢 editData:", editData);
-  
-  try {
-    enqueueSnackbar(
-      editData ? "Employee updated successfully!" : "Employee added successfully!",
-      { 
-        variant: "success",
-        autoHideDuration: 3000
-      }
-    );
-    console.log("🟢 enqueueSnackbar was called");
-  } catch (error) {
-    console.error("🔴 Error calling enqueueSnackbar:", error);
-  }
+    console.log("🟢 enqueueSnackbar function exists:", !!enqueueSnackbar);
+    console.log("🟢 editData:", editData);
+    
+    try {
+      enqueueSnackbar(
+        editData ? "Employee updated successfully!" : "Employee added successfully!",
+        { 
+          variant: "success",
+          autoHideDuration: 3000
+        }
+      );
+      console.log("🟢 enqueueSnackbar was called");
+    } catch (error) {
+      console.error("🔴 Error calling enqueueSnackbar:", error);
+    }
+    
     fetchEmployees();
     setEditData(null);
-    setShowForm(false); // Hide form after successful submission
-    
+    setShowForm(false);
   };
 
   const handleCancel = () => {
     setEditData(null);
-    setShowForm(false); // Hide form when cancel is clicked
+    setShowForm(false);
   };
 
   const handleAddEmployee = () => {
-    setEditData(null); // Clear any edit data
-    setShowForm(true); // Show form for adding new employee
+    setEditData(null);
+    setShowForm(true);
   };
 
   const handleCloseForm = () => {
@@ -204,7 +197,7 @@ export default function EmployeePage() {
       )}
       
       {/* Employee Form - Conditionally rendered */}
-       {(user?.role === "ADMIN" || user?.role === "HR") && showForm && (
+      {(user?.role === "ADMIN" || user?.role === "HR") && showForm && (
         <div className="mb-6 border rounded-lg shadow">
           {/* Form Header with Close Button */}
           <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">

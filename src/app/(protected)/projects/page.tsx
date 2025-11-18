@@ -5,8 +5,7 @@ import { useSnackbar } from "notistack";
 import { useAuth } from "@/context/AuthContext";
 import { EmpDataTable } from "./Empdata-table";
 import { columns, Project } from "./columns";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -17,13 +16,8 @@ export default function ProjectsPage() {
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const token = user?.token;
-      if (!token) return;
-
       const res = await fetch("/api/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include", // 👈 Send cookies automatically
       });
 
       if (!res.ok) throw new Error("Failed to fetch projects");
@@ -31,56 +25,43 @@ export default function ProjectsPage() {
       const data: Project[] = await res.json();
       setProjects(data);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      enqueueSnackbar(errorMessage, { variant: "error" });
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      enqueueSnackbar(message, { variant: "error" });
     } finally {
       setLoading(false);
     }
-  }, [user, enqueueSnackbar]);
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
-    if (user?.token) {
-      fetchProjects();
-    }
-  }, [fetchProjects, user?.token]);
+    if (user) fetchProjects();
+  }, [fetchProjects, user]);
 
-  
-  const handleEdit = (project: Project) => {
-    console.log('Edit project:', project);
-    // Implement your edit logic here
-  };
+  // Unified handler for delete (could be extended for edit later)
   const handleDelete = async (project: Project) => {
     try {
-      const token = user?.token;
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       if (!res.ok) throw new Error("Failed to delete project");
-      
+
       enqueueSnackbar("Project deleted successfully", { variant: "success" });
       fetchProjects();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      enqueueSnackbar(errorMessage, { variant: "error" });
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      enqueueSnackbar(message, { variant: "error" });
     }
   };
 
-  const handleViewDetails = (project: Project) => {
-    // Navigate to project details page or show modal
-    console.log("View details:", project);
-    enqueueSnackbar(`Viewing details for ${project.title}`, { variant: "info" });
+  const handleEdit = (project: Project) => {
+    // Future implementation placeholder
+    enqueueSnackbar(`Edit feature coming soon for ${project.title}`, { variant: "info" });
   };
 
-  // const handleSuccess = () => {
-  //   fetchProjects();
-  //   setEditData(null);
-  // };
+  const handleViewDetails = (project: Project) => {
+    enqueueSnackbar(`Viewing details for ${project.title}`, { variant: "info" });
+  };
 
   if (loading) {
     return (
@@ -103,24 +84,20 @@ export default function ProjectsPage() {
         </div>
 
         <ScrollArea className="h-full w-[1150px] rounded-md border">
-  <div className="min-w-full ">
-     i am here
-    <EmpDataTable
-      columns={columns}
-      data={projects}
-      meta={{
-        currentUser: user || undefined,
-        onEdit: user?.role === "ADMIN" ? handleEdit : undefined,
-        onDelete: user?.role === "ADMIN" ? handleDelete : undefined,
-        onViewDetails: handleViewDetails,
-      }}
-    />
-  </div>
-  {/* horizontal scrollbar */}
-  <ScrollBar orientation="horizontal" />
-</ScrollArea>
-
-       
+          <div className="min-w-full">
+            <EmpDataTable
+              columns={columns}
+              data={projects}
+              meta={{
+                currentUser: user || undefined,
+                onEdit: user?.role === "ADMIN" ? handleEdit : undefined,
+                onDelete: user?.role === "ADMIN" ? handleDelete : undefined,
+                onViewDetails: handleViewDetails,
+              }}
+            />
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET one department by ID
 export async function GET(
@@ -7,6 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     const department = await prisma.department.findUnique({
       where: { id: Number((await params).id) },
     });

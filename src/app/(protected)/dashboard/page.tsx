@@ -1,12 +1,13 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useEffect, useCallback, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Users, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
+import {
+  Users,
+  Calendar,
+  Clock,
+  CheckCircle,
   XCircle,
   TrendingUp,
   Briefcase,
@@ -19,10 +20,9 @@ import {
   Cake,
   Bell,
   ArrowRight,
-  
   ListTodo,
   Timer,
-  FileText
+  FileText,
 } from "lucide-react";
 
 type Attendance = {
@@ -32,10 +32,7 @@ type Attendance = {
   checkIn: string;
   checkOut: string | null;
   hoursWorked: number | null;
-  employee: {
-    firstName: string;
-    lastName: string;
-  };
+  employee: { firstName: string; lastName: string };
 };
 
 type TaskDetailed = {
@@ -53,10 +50,7 @@ type LeaveRequest = {
   endDate: string;
   leaveType: string;
   status: string;
-  employee: {
-    firstName: string;
-    lastName: string;
-  };
+  employee: { firstName: string; lastName: string };
 };
 
 type DashboardStats = {
@@ -88,27 +82,22 @@ type DashboardStats = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-   const router = useRouter();
 
   const isAdminOrHR = user?.role === "ADMIN" || user?.role === "HR";
 
+  /** 🔄 Fetch dashboard data using cookies */
   const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = user?.token;
-      if (!token) return;
-
       const [attendanceRes, statsRes] = await Promise.all([
-        fetch("/api/attendance?limit=10", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/dashboard/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        fetch("/api/attendance?limit=10", { credentials: "include" }),
+        fetch("/api/dashboard/stats", { credentials: "include" }),
       ]);
 
       if (attendanceRes.ok) {
@@ -125,29 +114,23 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.token]);
+  }, []);
 
   useEffect(() => {
-    if (user?.token) {
-      fetchDashboardData();
-    }
-  }, [user?.token, fetchDashboardData]);
+    if (user) fetchDashboardData();
+  }, [fetchDashboardData, user]);
 
+  /** ✅ Cookie-based check-in */
   const handleCheckIn = async () => {
     setCheckInLoading(true);
     try {
-      const token = user?.token;
       const res = await fetch("/api/attendance", {
         method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
 
-      if (res.ok) {
-        fetchDashboardData();
-      }
+      if (res.ok) fetchDashboardData();
     } catch (error) {
       console.error("Check-in error:", error);
     } finally {
@@ -155,21 +138,17 @@ export default function DashboardPage() {
     }
   };
 
+  /** ✅ Cookie-based check-out */
   const handleCheckOut = async () => {
     setCheckInLoading(true);
     try {
-      const token = user?.token;
       const res = await fetch("/api/attendance/checkout", {
         method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
 
-      if (res.ok) {
-        fetchDashboardData();
-      }
+      if (res.ok) fetchDashboardData();
     } catch (error) {
       console.error("Check-out error:", error);
     } finally {
@@ -177,39 +156,50 @@ export default function DashboardPage() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+  /** Utility Formatters */
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH": return "text-red-600 bg-red-100";
-      case "MEDIUM": return "text-amber-600 bg-amber-100";
-      case "LOW": return "text-green-600 bg-green-100";
-      default: return "text-slate-600 bg-slate-100";
+      case "HIGH":
+        return "text-red-600 bg-red-100";
+      case "MEDIUM":
+        return "text-amber-600 bg-amber-100";
+      case "LOW":
+        return "text-green-600 bg-green-100";
+      default:
+        return "text-slate-600 bg-slate-100";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "COMPLETED": return "text-green-600 bg-green-100";
-      case "IN_PROGRESS": return "text-blue-600 bg-blue-100";
-      case "PENDING": return "text-amber-600 bg-amber-100";
-      default: return "text-slate-600 bg-slate-100";
+      case "COMPLETED":
+        return "text-green-600 bg-green-100";
+      case "IN_PROGRESS":
+        return "text-blue-600 bg-blue-100";
+      case "PENDING":
+        return "text-amber-600 bg-amber-100";
+      default:
+        return "text-slate-600 bg-slate-100";
     }
   };
+
+  
+
+
 
   // Admin/HR Dashboard
   if (isAdminOrHR) {

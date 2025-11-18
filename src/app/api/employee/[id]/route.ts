@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { authMiddleware } from "@/lib/middleware/auth";
 import { softDeleteEmployee } from "@/lib/softDeleteUtils"; // Import the soft delete utility
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 type Param = { params: Promise<{ id: string }> };
 
@@ -19,9 +20,16 @@ type PatchBody = Partial<{
 
 // GET - any logged-in user can view employees (only non-deleted by default)
 export async function GET(req: NextRequest, { params }: Param) {
-  const auth = authMiddleware(req);
-  if (auth instanceof NextResponse) return auth;
-  
+ // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
   try {
     const id = Number((await params).id);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -58,8 +66,16 @@ export async function GET(req: NextRequest, { params }: Param) {
 
 // PATCH - only ADMIN allowed
 export async function PATCH(req: NextRequest, { params }: Param) {
-  const auth = authMiddleware(req, ["ADMIN"]);
-  if (auth instanceof NextResponse) return auth;
+  // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
   
   try {
     const id = Number((await params).id);

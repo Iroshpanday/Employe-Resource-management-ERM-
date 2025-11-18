@@ -1,12 +1,20 @@
 import { NextResponse,NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET attendance statistics
 export async function GET(req: NextRequest) {
   try {
-    const auth = authMiddleware(req);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const employeeId = searchParams.get("employeeId");
@@ -15,8 +23,8 @@ export async function GET(req: NextRequest) {
 
     let whereClause = {};
     
-    if (auth.role === "EMPLOYEE") {
-      whereClause = { employeeId: auth.id };
+    if (user.role === "EMPLOYEE") {
+      whereClause = { employeeId: user.id };
     } else if (employeeId) {
       whereClause = { employeeId: parseInt(employeeId) };
     }

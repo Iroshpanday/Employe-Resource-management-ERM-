@@ -24,8 +24,7 @@ export default function AdminProjectsPage() {
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const token = user?.token;
-      if (!token) return;
+      
 
       let url = "/api/projects";
       const params = new URLSearchParams();
@@ -36,9 +35,7 @@ export default function AdminProjectsPage() {
       if (params.toString()) url += `?${params.toString()}`;
 
       const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        
       });
 
       if (!res.ok) throw new Error("Failed to fetch projects");
@@ -52,13 +49,13 @@ export default function AdminProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCategory, selectedStatus, enqueueSnackbar]);
+  }, [ selectedCategory, selectedStatus, enqueueSnackbar]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchProjects();
     }
-  }, [fetchProjects, user?.token]);
+  }, [fetchProjects, user]);
 
   const handleEdit = (project: Project) => {
 
@@ -71,12 +68,10 @@ export default function AdminProjectsPage() {
 
   const handleDelete = async (project: Project) => {
     try {
-      const token = user?.token;
+      
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        
       });
 
       if (!res.ok) throw new Error("Failed to delete project");

@@ -85,9 +85,15 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+  lockedUntil DateTime?
+
+  refreshTokens RefreshToken[]  // add relation
+  loginAttempt LoginAttempt[]
+  asswordResetToken PasswordResetToken[]
 
   @@map("users")
 }
+
 
 model LeaveRequest {
   id           Int      @id @default(autoincrement())
@@ -189,4 +195,42 @@ model Comment {
   employee   Employee @relation(fields: [employeeId], references: [id])
   
   createdAt  DateTime @default(now())
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   // hashed token
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  @@index([userId])
+  @@map("refresh_tokens") // optional table name
+}
+model LoginAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  ip        String
+  email     String?
+  success   Boolean
+  createdAt DateTime @default(now())
+  
+
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String   // hashed token
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

@@ -12,17 +12,13 @@ export default function AttendanceActions({ onAction }: { onAction: () => void }
   const handleCheckIn = async () => {
     setLoading({ ...loading, checkIn: true });
     try {
-      const token = user?.token;
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
+      
 
       // Omit body entirely - backend will handle from auth token
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         // No body - backend uses auth token to determine employee
       });
@@ -61,17 +57,14 @@ export default function AttendanceActions({ onAction }: { onAction: () => void }
   const handleCheckOut = async () => {
     setLoading({ ...loading, checkOut: true });
     try {
-      const token = user?.token;
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
+      
 
       // Omit body entirely - backend will handle from auth token
       const res = await fetch("/api/attendance/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          
         },
         // No body - backend uses auth token to determine employee
       });

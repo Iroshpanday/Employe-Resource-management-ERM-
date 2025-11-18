@@ -1,6 +1,6 @@
 import { NextResponse,NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // Utility function to get Nepal time
 function getNepalTime(): Date {
@@ -31,10 +31,18 @@ export async function POST(req: NextRequest) {
   try {
     console.log("🔵 CHECK-OUT REQUEST RECEIVED");
     
-    const auth = authMiddleware(req, ["EMPLOYEE", "HR", "ADMIN"]);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    console.log("🔵 Auth user:", { id: auth.id, role: auth.role });
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    console.log("🔵 Auth user:", { id: user.id, role: user.role });
 
     // Handle case where body might be empty or null
     let body: { employeeId?: number | string } = {};
@@ -52,12 +60,12 @@ export async function POST(req: NextRequest) {
 
     // Get the user with employee relation to find the correct employee ID
     const userWithEmployee = await prisma.user.findUnique({
-      where: { id: auth.id },
+      where: { id: user.id },
       include: { employee: true }
     });
 
     if (!userWithEmployee) {
-      console.log("❌ User not found:", auth.id);
+      console.log("❌ User not found:", user.id);
       return NextResponse.json(
         { error: "User not found" }, 
         { status: 404 }
@@ -69,7 +77,7 @@ export async function POST(req: NextRequest) {
     // Determine target employee ID based on role and request
     let targetEmployeeId: number | null = null;
 
-    if (auth.role === "EMPLOYEE" || auth.role === "HR" ) {
+    if (user.role === "EMPLOYEE" || user.role === "HR" ) {
       // Employee can only check themselves out
       if (!userWithEmployee.employee) {
         console.log("❌ Employee record not found for user");

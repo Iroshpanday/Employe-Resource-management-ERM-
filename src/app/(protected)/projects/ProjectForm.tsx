@@ -99,8 +99,7 @@ export default function ProjectForm({ onSuccess, onCancel, editData }: ProjectFo
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
     try {
-       console.log("submit hudai")
-      const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : null;
+       
       
       const url = editData && editData.id 
         ? `/api/projects/${editData.id}` 
@@ -111,10 +110,7 @@ export default function ProjectForm({ onSuccess, onCancel, editData }: ProjectFo
 
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        
         body: JSON.stringify(data),
       });
 

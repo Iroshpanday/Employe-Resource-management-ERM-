@@ -1,12 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET all leave requests (with role-based filtering)
 export async function GET(req: NextRequest) {
   try {
-    const auth = authMiddleware(req);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const employeeId = searchParams.get("employeeId");
@@ -14,14 +22,14 @@ export async function GET(req: NextRequest) {
     let whereClause = {};
     
     // Employees can only see their own leave requests
-    if (auth.role === "EMPLOYEE") {
+    if (user.role === "EMPLOYEE") {
       // Use auth.employeeId instead of auth.id for employees
-      if (!auth.employeeId) {
+      if (!user.employeeId) {
         return NextResponse.json({ 
           error: "Employee profile not found" 
         }, { status: 400 });
       }
-      whereClause = { employeeId: auth.employeeId };
+      whereClause = { employeeId: user.employeeId };
     } 
     // HR/Admin can filter by employee or see all
     else if (employeeId) {
@@ -54,11 +62,16 @@ export async function GET(req: NextRequest) {
 // 📌 CREATE new leave request
 export async function POST(req: NextRequest) {
   try {
-    const auth = authMiddleware(req, ["EMPLOYEE", "HR", "ADMIN"]);
-      // Add debug logging
-  console.log("Auth result:", auth);
-  console.log("Auth type:", typeof auth);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { 
@@ -96,14 +109,14 @@ export async function POST(req: NextRequest) {
     // Employees can only create requests for themselves
     let finalEmployeeId: number;
     
-    if (auth.role === "EMPLOYEE") {
+    if (user.role === "EMPLOYEE") {
       // ✅ CORRECT - use auth.employeeId for employees
-      if (!auth.employeeId) {
+      if (!user.employeeId) {
         return NextResponse.json({ 
           error: "Employee profile not found. Please contact HR." 
         }, { status: 400 });
       }
-      finalEmployeeId = auth.employeeId;
+      finalEmployeeId = user.employeeId;
     } else {
       // For HR/Admin, use the provided employeeId
       if (!bodyEmployeeId) {

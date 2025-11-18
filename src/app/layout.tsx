@@ -2,8 +2,10 @@
 "use client";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+// import { AuthServerWrapper } from "./AuthServerWrapper";
 import { SnackbarProvider } from 'notistack';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+// import "@/lib/globalFetch";
 
 export default function RootLayout({
   children,

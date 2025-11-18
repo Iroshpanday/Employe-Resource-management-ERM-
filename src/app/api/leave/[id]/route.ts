@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET one leave request by ID
 export async function GET(
@@ -8,9 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = authMiddleware(req);
-    if (auth instanceof NextResponse) return auth;
-    // console.log("Yaha samma chalexa")
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: Number((await params).id) },
@@ -55,8 +62,17 @@ export async function PATCH(
 ) {
   try {
     // Only HR and Admin can update leave requests
-    const auth = authMiddleware(req, ["HR", "ADMIN", "EMPLOYEE"]);
-    if (auth instanceof NextResponse) return auth;
+
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR",].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { status, comments } = body;
@@ -95,8 +111,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = authMiddleware(req);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: Number((await params).id) }
@@ -108,9 +132,9 @@ export async function DELETE(
 
     // Employees can only delete their own pending requests
     // HR/Admin can delete any request
-    if (auth.role === "EMPLOYEE") {
-      if (leaveRequest.employeeId !== auth.employeeId) {
-        console.log("Access denied details - auth.id:", auth.id, "leaveRequest.employeeId:", leaveRequest.employeeId);
+    if (user.role === "EMPLOYEE") {
+      if (leaveRequest.employeeId !== user.employeeId) {
+        console.log("Access denied details - auth.id:", user.id, "leaveRequest.employeeId:", leaveRequest.employeeId);
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
       if (leaveRequest.status !== "PENDING") {

@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 type CreateBody = {
   projectId: number;
@@ -12,10 +12,19 @@ type CreateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  const auth = authMiddleware(req, ["ADMIN", "HR"]);
-  if (auth instanceof NextResponse) return auth;
+  
 
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     const body = (await req.json()) as CreateBody;
     const { projectId, title, description, priority, dueDate, assignedTo } = body;
 

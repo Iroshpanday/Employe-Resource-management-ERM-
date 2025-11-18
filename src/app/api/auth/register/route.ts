@@ -1,66 +1,109 @@
+// app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth/hash";
+import { rateLimit } from "@/lib/security/rateLimit";
+import { validateEmail, validatePassword } from "@/lib/validation/authValidation";
 
 export async function POST(req: NextRequest) {
-  try {
-    const { email, password, role } = await req.json();
+  // Rate Limit: Max 5 register attempts per 5 minutes per IP
+const ip =
+  req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+  req.headers.get("x-real-ip") ||
+  "unknown";
+  const limitResult = rateLimit(ip, "register", 5, 300);
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
-    }
+  if (!limitResult.success) {
+    return NextResponse.json(
+      { success: false, error: "Too many attempts. Try again later." },
+      { status: 429 }
+    ); 
+  }
+
+  try {
+    const body = await req.json();
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+    const role = body.role || "EMPLOYEE";
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    if (!validateEmail(email)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid email format" },
+        { status: 400 }
+      );
     }
 
-    // Validate password strength (optional)
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    // Validate password strength
+    if (!validatePassword(password)) {
+      return NextResponse.json(
+        { success: false, error: "Password must be at least 6 characters" },
+        { status: 400 }
+      );
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    });
+
     if (existingUser) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Email already used" },
+        { status: 400 }
+      );
     }
 
-    // Try to find an existing employee with this email to auto-link
-    const existingEmployee = await prisma.employee.findUnique({
+    // Check if employee exists to auto-link
+    const employee = await prisma.employee.findUnique({
       where: { email },
       include: { user: true }
     });
 
-    // If employee exists but already has a user account, prevent creation
-    if (existingEmployee && existingEmployee.user) {
-      return NextResponse.json({ 
-        error: "Employee already has a user account" 
-      }, { status: 400 });
+    if (employee?.user) {
+      return NextResponse.json(
+        { success: false, error: "Employee already linked to another user" },
+        { status: 400 }
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashed = await hashPassword(password);
 
     const newUser = await prisma.user.create({
       data: {
         email,
-        password: hashedPassword,
-        role: role || "EMPLOYEE",
-        // Auto-link if employee with same email exists and doesn't have a user
-        employee: existingEmployee ? { connect: { id: existingEmployee.id } } : undefined,
+        password: hashed,
+        role,
+        employee: employee ? { connect: { id: employee.id } } : undefined,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        employeeId: true,
       },
     });
 
-    return NextResponse.json({ 
-      message: "User registered successfully", 
-      userId: newUser.id,
-      linkedToEmployee: !!existingEmployee,
-      employeeId: existingEmployee?.id 
-    }, { status: 201 });
-  } catch (err) {
-    console.error("Registration error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "User registered successfully",
+        user: newUser,
+        linkedToEmployee: !!employee,
+      },
+      { status: 201 }
+    );
+
+  } catch (error) {
+    console.error("Registration error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

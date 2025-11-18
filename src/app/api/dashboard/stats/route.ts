@@ -1,17 +1,21 @@
 // app/api/dashboard/stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-  const auth = authMiddleware(req);
   
-  if (auth instanceof NextResponse) {
-    return auth;
-  }
 
   try {
-    const { role, employeeId } = auth;
+
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    
+    const { role, employeeId } = user;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

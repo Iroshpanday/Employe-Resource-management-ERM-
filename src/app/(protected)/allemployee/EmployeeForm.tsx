@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useSnackbar } from "notistack";
 import { Branch } from "../branch/columns";
 import { Department } from "../department/columns";
-import { useAuth } from "@/context/AuthContext";
+
 
 export const employeeSchema = z.object({
   firstName: z
@@ -61,7 +61,7 @@ export default function EmployeeForm({
   onCancel,
 }: EmployeeFormProps) {
   const { enqueueSnackbar } = useSnackbar();
-  const { user } = useAuth();
+  
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -96,30 +96,26 @@ export default function EmployeeForm({
     // Fetch branches and departments for dropdowns
     const fetchData = async () => {
       try {
-        const token = user?.token;
-        if (!token) return;
-
+        // No need for token in headers - cookies are sent automatically
         const [branchesRes, departmentsRes] = await Promise.all([
-          fetch("/api/branch", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          fetch("/api/department", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
+          fetch("/api/branch"),
+          fetch("/api/department"),
         ]);
 
         if (branchesRes.ok) {
           const branchesData = await branchesRes.json();
           setBranches(branchesData);
+        } else if (branchesRes.status === 401) {
+          enqueueSnackbar("Session expired. Please login again.", { variant: "error" });
+          return;
         }
 
         if (departmentsRes.ok) {
           const departmentsData = await departmentsRes.json();
           setDepartments(departmentsData);
+        } else if (departmentsRes.status === 401) {
+          enqueueSnackbar("Session expired. Please login again.", { variant: "error" });
+          return;
         }
       } catch (error: unknown) {
         const message =
@@ -133,7 +129,7 @@ export default function EmployeeForm({
     };
 
     fetchData();
-  }, [enqueueSnackbar, user?.token]);
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
     if (editData) {
@@ -147,8 +143,8 @@ export default function EmployeeForm({
         branchId: editData.branchId,
         departmentId: editData.departmentId,
         gender: editData.gender,
-    address: editData.address,
-    status: editData.status,
+        address: editData.address,
+        status: editData.status,
       });
     } else {
       reset({
@@ -169,23 +165,21 @@ export default function EmployeeForm({
 
     setIsUploading(true);
     try {
-      const token = user?.token;
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
       const formData = new FormData();
       formData.append("file", file);
 
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
+        // Cookies are sent automatically
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Session expired. Please login again.");
+        }
+        throw new Error("Upload failed");
+      }
 
       const data = await res.json();
       setValue("cvFile", data.path);
@@ -200,11 +194,6 @@ export default function EmployeeForm({
 
   const onSubmit = async (data: EmployeeFormValues) => {
     try {
-      const token = user?.token;
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
       const url = editData ? `/api/employee/${editData.id}` : `/api/employee`;
       const method = editData ? "PATCH" : "POST";
 
@@ -212,17 +201,19 @@ export default function EmployeeForm({
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          // No Authorization header needed - cookies are sent automatically
         },
         body: JSON.stringify(data),
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Session expired. Please login again.");
+        }
         const err = await res.json();
         throw new Error(err.error ?? "Failed to save employee");
       }
 
-      
       console.log("✅ onSuccess() called from EmployeeForm");
       onSuccess();
       reset();
@@ -408,46 +399,44 @@ export default function EmployeeForm({
           )}
         </div>
 
+        <div>
+          <label htmlFor="gender" className="block text-sm font-medium">Gender *</label>
+          <select
+            id="gender"
+            {...register("gender")}
+            className="border rounded px-2 py-1 w-full"
+          >
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          {errors.gender && <p className="text-red-500 text-sm mt-1">{errors.gender.message}</p>}
+        </div>
 
         <div>
-  <label htmlFor="gender" className="block text-sm font-medium">Gender *</label>
-  <select
-    id="gender"
-    {...register("gender")}
-    className="border rounded px-2 py-1 w-full"
-  >
-    <option value="Male">Male</option>
-    <option value="Female">Female</option>
-    <option value="Other">Other</option>
-  </select>
-  {errors.gender && <p className="text-red-500 text-sm mt-1">{errors.gender.message}</p>}
-</div>
+          <label htmlFor="status" className="block text-sm font-medium">Status *</label>
+          <select
+            id="status"
+            {...register("status")}
+            className="border rounded px-2 py-1 w-full"
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="On Leave">On Leave</option>
+          </select>
+          {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+        </div>
 
-<div>
-  <label htmlFor="status" className="block text-sm font-medium">Status *</label>
-  <select
-    id="status"
-    {...register("status")}
-    className="border rounded px-2 py-1 w-full"
-  >
-    <option value="Active">Active</option>
-    <option value="Inactive">Inactive</option>
-    <option value="On Leave">On Leave</option>
-  </select>
-  {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
-</div>
-
-<div className="md:col-span-2">
-  <label htmlFor="address" className="block text-sm font-medium">Address *</label>
-  <input
-    id="address"
-    type="text"
-    {...register("address")}
-    className="border rounded px-2 py-1 w-full"
-  />
-  {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
-</div>
-
+        <div className="md:col-span-2">
+          <label htmlFor="address" className="block text-sm font-medium">Address *</label>
+          <input
+            id="address"
+            type="text"
+            {...register("address")}
+            className="border rounded px-2 py-1 w-full"
+          />
+          {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+        </div>
       </div>
 
       <div className="flex gap-2">

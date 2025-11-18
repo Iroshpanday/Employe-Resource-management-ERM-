@@ -27,7 +27,7 @@ export default function ProjectDetailsPage() {
 
   const fetchProjectDetails = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : user?.token;
+      const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : user;
       const res = await fetch(`/api/projects/${projectId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -51,13 +51,13 @@ export default function ProjectDetailsPage() {
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar, router, user?.token, projectId]);
+  }, [enqueueSnackbar, router, user, projectId]);
 
   useEffect(() => {
-    if (user?.token && projectId) {
+    if (user && projectId) {
       fetchProjectDetails();
     }
-  }, [fetchProjectDetails, projectId, user?.token]);
+  }, [fetchProjectDetails, projectId, user]);
 
   // Handle Edit Project
   const handleEditProject = () => {
@@ -69,7 +69,7 @@ export default function ProjectDetailsPage() {
   // Handle Delete Project
   const handleDeleteProject = async () => {
     try {
-      const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : user?.token;
+      const token = localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : user;
       const res = await fetch(`/api/projects/${projectId}`, {
         method: "DELETE",
         headers: {

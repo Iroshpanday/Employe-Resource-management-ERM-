@@ -20,8 +20,7 @@ export default function AttendancePage() {
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
     try {
-      const token = user?.token;
-      if (!token) return;
+      
 
       let url = "/api/attendance";
       const params = new URLSearchParams();
@@ -33,9 +32,7 @@ export default function AttendancePage() {
         url += `?${params.toString()}`;
       }
 
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(url, );
 
       if (!res.ok) throw new Error("Failed to fetch attendance records");
 
@@ -48,10 +45,10 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, [user, filters, enqueueSnackbar]);
+  }, [ filters, enqueueSnackbar]);
 
   useEffect(() => {
-    if (user?.token) {
+    if (user) {
       fetchAttendance();
     }
   }, [fetchAttendance, user]);

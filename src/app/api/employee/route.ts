@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 type CreateBody = {
   firstName: string;
@@ -18,13 +18,23 @@ type CreateBody = {
 
 // GET - any logged-in user can view employees
 export async function GET(req: NextRequest) {
-  const auth = authMiddleware(req);
+  
   const url = new URL(req.url);
   const includeDeleted = url.searchParams.get('includeDeleted') === 'true';
 
-  if (auth instanceof NextResponse) return auth;
+  
 
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
     const employees = await prisma.employee.findMany({
       where: { 
         
@@ -42,10 +52,20 @@ export async function GET(req: NextRequest) {
 
 // POST - only ADMIN can add employees
 export async function POST(req: NextRequest) {
-  const auth = authMiddleware(req, ["ADMIN"]);
-  if (auth instanceof NextResponse) return auth;
+ 
 
   try {
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
     const body = (await req.json()) as CreateBody;
     const { firstName, lastName, email, phone, position, cvFile, branchId, departmentId,gender,address,status } = body;
 

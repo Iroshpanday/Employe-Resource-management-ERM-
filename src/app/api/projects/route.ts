@@ -1,8 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
-import type { Prisma } from "@prisma/client";
 
+import type { Prisma } from "@prisma/client";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 type CreateBody = {
   title: string;
   description: string;
@@ -18,10 +18,15 @@ type CreateBody = {
 
 // GET - all projects with role-based filtering
 export async function GET(req: NextRequest) {
-  const auth = authMiddleware(req);
-  if (auth instanceof NextResponse) return auth;
+  
 
   try {
+    // 🔹 Get userenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unuserorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
     const status = searchParams.get("status");
@@ -29,26 +34,26 @@ export async function GET(req: NextRequest) {
     let whereClause: Prisma.ProjectWhereInput = {};
 
     // Employees can only see projects they are enrolled in
-    if (auth.role === "EMPLOYEE") {
-      if (!auth.employeeId) {
+    if (user.role === "EMPLOYEE") {
+      if (!user.employeeId) {
         return NextResponse.json({ error: "Employee profile not found" }, { status: 400 });
       }
       
       whereClause = {
         projectEmployees: {
           some: {
-            employeeId: auth.employeeId
+            employeeId: user.employeeId
           }
         }
       };
     }
     
     // Additional filters for HR/Admin
-    if (category && (auth.role === "HR" || auth.role === "ADMIN")) {
+    if (category && (user.role === "HR" || user.role === "ADMIN")) {
       whereClause.category = category;
     }
     
-    if (status && (auth.role === "HR" || auth.role === "ADMIN")) {
+    if (status && (user.role === "HR" || user.role === "ADMIN")) {
       whereClause.status = status;
     }
 
@@ -95,10 +100,20 @@ export async function GET(req: NextRequest) {
 
 // POST - create new project (Admin only)
 export async function POST(req: NextRequest) {
-  const auth = authMiddleware(req, ["ADMIN"]);
-  if (auth instanceof NextResponse) return auth;
+  
 
   try {
+    // 🔹 Get authenticated user
+        const user = await getAuthUser(req);
+        if (!user) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+    
+        // 🔹 Role-based access control
+        if (!["ADMIN"].includes(user.role)) {
+          return NextResponse.json({ error: "Access denied" }, { status: 403 });
+        }
+    
     const body = (await req.json()) as CreateBody;
     const { 
       title, 

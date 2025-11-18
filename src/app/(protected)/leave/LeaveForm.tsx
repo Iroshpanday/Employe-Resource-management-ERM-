@@ -78,11 +78,9 @@ export default function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
     if (user?.role === "HR" || user?.role === "ADMIN") {
       const fetchEmployees = async () => {
         try {
-          const token = user?.token;
+          
           const res = await fetch("/api/employee", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            
           });
           if (res.ok) {
             const data = await res.json();
@@ -99,7 +97,7 @@ export default function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
   const onSubmit = async (data: LeaveFormValues) => {
     setIsSubmitting(true);
     try {
-      const token = user?.token;
+      
       const payload = {
         ...data,
         // If employee is not selected (for HR/Admin), use current user's ID
@@ -108,10 +106,7 @@ export default function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
 
       const res = await fetch("/api/leave", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        
         body: JSON.stringify(payload),
       });
 

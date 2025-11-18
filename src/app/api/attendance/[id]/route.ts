@@ -1,6 +1,6 @@
 import { NextResponse,NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authMiddleware } from "@/lib/middleware/auth";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // 📌 GET specific attendance record
 export async function GET(
@@ -8,8 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = authMiddleware(req);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+        const user = await getAuthUser(req);
+        if (!user) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+    
+        // 🔹 Role-based access control
+        if (!["ADMIN", "HR","EMPLOYEE"].includes(user.role)) {
+          return NextResponse.json({ error: "Access denied" }, { status: 403 });
+        }
 
     const attendance = await prisma.attendance.findUnique({
       where: { id: Number((await params).id) },
@@ -33,7 +41,7 @@ export async function GET(
     }
 
     // Employees can only see their own records
-    if (auth.role === "EMPLOYEE" && attendance.employeeId !== auth.id) {
+    if (user.role === "EMPLOYEE" && attendance.employeeId !== user.id) {
       return NextResponse.json(
         { error: "Access denied" }, 
         { status: 403 }
@@ -56,8 +64,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = authMiddleware(req, ["HR", "ADMIN"]);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { checkIn, checkOut, hoursWorked } = body;
@@ -106,8 +122,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = authMiddleware(req, ["HR", "ADMIN"]);
-    if (auth instanceof NextResponse) return auth;
+    // 🔹 Get authenticated user
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔹 Role-based access control
+    if (!["ADMIN", "HR"].includes(user.role)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
 
     const attendance = await prisma.attendance.findUnique({
       where: { id: Number((await params).id) }
